@@ -3,7 +3,7 @@ import java.util.*;
 public class Deck {
     private static final String[] RANKS = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
     private static final String[] SUITS = {"C", "D", "H", "S"};
-    private List<Card> cards;
+    public List<Card> cards;
 
     public Deck() {
         this.cards = new ArrayList<>();
@@ -23,9 +23,11 @@ public class Deck {
         if (this.cards.isEmpty()) {
             return null; // Or throw exception
         }
-        return this.cards.remove(this.cards.size() - 1);
+        return this.cards.removeLast();
     }
 
+    // Multi-card deal
+    // Use in FLOP
     public List<Card> deal(int n) {
         List<Card> dealtCards = new ArrayList<>();
         for (int i = 0; i < n; i++) {
@@ -35,5 +37,12 @@ public class Deck {
             }
         }
         return dealtCards;
+    }
+}
+
+record Card(String rank, String suit) {
+    @Override
+    public String toString() {
+        return rank + suit;
     }
 }
