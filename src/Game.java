@@ -18,9 +18,9 @@ public class Game {
     private int CHECK_COUNTER;
 
     private int currentBet;
-    private Map<String, Integer> playerBets;
-    private List<String> activePlayerIds;
-    private int currentActorPos;
+    public Map<String, Integer> playerBets;
+    public List<String> activePlayerIds;
+    public int currentActorPos;
 
     public Game(List<Player> initialPlayers, int bigBlind) {
         this.players = new HashMap<>();
@@ -70,10 +70,14 @@ public class Game {
         this.currentActorPos = 2 % this.playerOrder.size();
     }
 
-    public void Fold(String playerId) {
+    public void fold(String playerId) {
         this.activePlayerIds.remove(playerId);
         System.out.println("Player " + playerId + " folds.");
 
+        if (this.activePlayerIds.size() <= 1) {
+            _handOver();
+            return;
+        }
         if (_isRoundOver()) {
             _progress();
         } else {
@@ -81,9 +85,10 @@ public class Game {
         }
     }
 
-    public void Check() {
+    public void check() {
         if (this.isCheckable) {
             this.CHECK_COUNTER++;
+            System.out.println("Player " + this.currentActorPos + " check");
 
             if (_isRoundOver()) {
                 _progress();
@@ -92,11 +97,11 @@ public class Game {
             }
 
         } else {
-            System.out.println("Can't Check. Must Call, Raise or Fold");
+            System.out.println("Can't check. Must call, raise or fold");
         }
     }
 
-    public void Bet(String playerId, int amount) {
+    public void bet(String playerId, int amount) {
         this.isCheckable = false;
         this.pot += _postBet(playerId, amount);
         this.currentBet = this.playerBets.get(playerId); // New current bet
@@ -109,11 +114,12 @@ public class Game {
         }
     }
 
-    public void Call(String playerId) {
+    public void call(String playerId) {
         this.isCheckable = false;
         int callAmount = this.currentBet - this.playerBets.get(playerId);
         this.pot += _postBet(playerId, callAmount);
         System.out.println("Player " + playerId + " calls " + callAmount);
+
         if (_isRoundOver()) {
             _progress();
         } else {
@@ -121,11 +127,12 @@ public class Game {
         }
     }
 
-    public void Raise(String playerId, int amount) {
+    public void raise(String playerId, int amount) {
         this.isCheckable = false;
         this.pot += _postBet(playerId, amount);
         this.currentBet = this.playerBets.get(playerId); // New current bet
         System.out.println("Player " + playerId + " raise to " + amount);
+
         if (_isRoundOver()) {
             _progress();
         } else {
@@ -138,9 +145,15 @@ public class Game {
     }
 
     private boolean _isRoundOver() {
-        // true if all current have same bet
-        // true if bet is 0 and CHECK_COUNTER is equal to activePlayer size
-        // true when activePlayer size = 1
+        // all call
+        if (allValuesEqual(this.playerBets) && this.playerBets.values().iterator().next() != 0) {
+            return true;
+        }
+
+        // all check
+        if (this.playerBets.containsValue(0) && allValuesEqual(this.playerBets) && CHECK_COUNTER == activePlayerIds.size()) {
+            return true;
+        }
         return false;
     }
 
@@ -197,6 +210,21 @@ public class Game {
 
     private void _doShowdown () {
 
+    }
+
+    private void _handOver() {
+        if (this.activePlayerIds.size() == 1) {
+            String winnerId = this.activePlayerIds.get(0);
+            System.out.println("Player " + winnerId + " wins " + this.pot + " (everyone folded)");
+            this.players.get(winnerId).stack += this.pot;
+        }
+
+        System.out.println("--- HAND OVER ---");
+    }
+
+    private  <K, V> boolean allValuesEqual(Map<K, V> map) {
+        Set<V> uniqueValues = new HashSet<>(map.values());
+        return uniqueValues.size() <= 1;
     }
 
 }
