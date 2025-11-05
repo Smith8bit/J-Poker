@@ -12,6 +12,11 @@ public class Main {
         game.call(playerList.get(2).id);
         game.call(playerList.get(0).id);
         int currentP = game.currentActorPos;
+
+        game.check();
+        game.check();
+        game.check();
+
         game.check();
         game.check();
         game.check();
@@ -20,7 +25,12 @@ public class Main {
         game.check();
         game.check();
 
-        game.fold(playerList.get(0).id);
-        game.fold(playerList.get(1).id);
+//        game.bet(game.activePlayerIds.get(game.currentActorPos), 10);
+//        System.out.println(game.activePlayerIds.get(game.currentActorPos));
+//
+//        game.fold(game.activePlayerIds.get(game.currentActorPos));
+//
+//        System.out.println(game.activePlayerIds.get(game.currentActorPos));
+//        game.call(game.activePlayerIds.get(game.currentActorPos));
     }
 }

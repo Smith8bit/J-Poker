@@ -2,8 +2,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Game {
     private Map<String, Player> players;
@@ -20,7 +20,7 @@ public class Game {
     private int currentBet;
     public Map<String, Integer> playerBets;
     public List<String> activePlayerIds;
-    public int currentActorPos;
+    public int currentActorPos; // Index into activePlayerIds
 
     public Game(List<Player> initialPlayers, int bigBlind) {
         this.players = new HashMap<>();
@@ -57,7 +57,6 @@ public class Game {
         this.pot += _postBet(sbPlayerId, this.smallBlind);
         this.pot += _postBet(bbPlayerId, this.bigBlind);
         this.currentBet = this.bigBlind;
-        this.playerBets.put(bbPlayerId, bigBlind);
 
         // DEAL
         deck.shuffle();
@@ -67,10 +66,14 @@ public class Game {
             }
         }
 
-        this.currentActorPos = 2 % this.playerOrder.size();
+        // First to act is player after big blind
+        String firstToActId = this.playerOrder.get(2 % this.playerOrder.size());
+        this.currentActorPos = this.activePlayerIds.indexOf(firstToActId);
     }
 
     public void fold(String playerId) {
+        validateAction(playerId);
+
         this.activePlayerIds.remove(playerId);
         System.out.println("Player " + playerId + " folds.");
 
@@ -78,33 +81,41 @@ public class Game {
             _handOver();
             return;
         }
+
+        // Adjust currentActorPos if needed (if player after current folded)
+        if (this.currentActorPos >= this.activePlayerIds.size()) {
+            this.currentActorPos = 0;
+        }
+
         if (_isRoundOver()) {
             _progress();
-        } else {
-            _rotatePlayer();
         }
     }
 
     public void check() {
+        String currentPlayer = getCurrentPlayerId();
+        validateAction(currentPlayer);
+
         if (this.isCheckable) {
             this.CHECK_COUNTER++;
-            System.out.println("Player " + this.currentActorPos + " check");
+            System.out.println("Player " + currentPlayer + " checks");
 
             if (_isRoundOver()) {
                 _progress();
             } else {
                 _rotatePlayer();
             }
-
         } else {
             System.out.println("Can't check. Must call, raise or fold");
         }
     }
 
     public void bet(String playerId, int amount) {
+        validateAction(playerId);
+
         this.isCheckable = false;
         this.pot += _postBet(playerId, amount);
-        this.currentBet = this.playerBets.get(playerId); // New current bet
+        this.currentBet = this.playerBets.get(playerId);
         System.out.println("Player " + playerId + " bets " + amount);
 
         if (_isRoundOver()) {
@@ -115,6 +126,8 @@ public class Game {
     }
 
     public void call(String playerId) {
+        validateAction(playerId);
+
         this.isCheckable = false;
         int callAmount = this.currentBet - this.playerBets.get(playerId);
         this.pot += _postBet(playerId, callAmount);
@@ -128,10 +141,13 @@ public class Game {
     }
 
     public void raise(String playerId, int amount) {
+        validateAction(playerId);
+
         this.isCheckable = false;
-        this.pot += _postBet(playerId, amount);
-        this.currentBet = this.playerBets.get(playerId); // New current bet
-        System.out.println("Player " + playerId + " raise to " + amount);
+        int totalAmount = this.currentBet + amount;
+        this.pot += _postBet(playerId, totalAmount - this.playerBets.get(playerId));
+        this.currentBet = this.playerBets.get(playerId);
+        System.out.println("Player " + playerId + " raises to " + this.currentBet);
 
         if (_isRoundOver()) {
             _progress();
@@ -141,26 +157,28 @@ public class Game {
     }
 
     private void _rotatePlayer() {
-        this.currentActorPos = (this.currentActorPos + 1) % this.playerOrder.size();
+        this.currentActorPos = (this.currentActorPos + 1) % this.activePlayerIds.size();
     }
 
     private boolean _isRoundOver() {
-        // all call
-        if (allValuesEqual(this.playerBets) && this.playerBets.values().iterator().next() != 0) {
-            return true;
+        // Get only active players' bets
+        Map<String, Integer> activeBets = new HashMap<>();
+        for (String id : activePlayerIds) {
+            activeBets.put(id, playerBets.get(id));
         }
 
-        // all check
-        if (this.playerBets.containsValue(0) && allValuesEqual(this.playerBets) && CHECK_COUNTER == activePlayerIds.size()) {
-            return true;
+        // Check if all active players have matched the bet
+        if (allValuesEqual(activeBets) && !activeBets.isEmpty()) {
+            int betValue = activeBets.values().iterator().next();
+            if (betValue != 0) return true; // All called
+            if (betValue == 0 && CHECK_COUNTER == activePlayerIds.size()) return true; // All checked
         }
         return false;
     }
 
     public void _progress() {
         // Move to the next street
-        // Use in FLOP, TURN, RIVER, SHOWDOWN
-        this.street = Street.values()[this.street.ordinal()+1];
+        this.street = Street.values()[this.street.ordinal() + 1];
 
         this.currentBet = 0;
         this.isCheckable = true;
@@ -168,6 +186,9 @@ public class Game {
         for (String id : this.playerBets.keySet()) {
             this.playerBets.put(id, 0);
         }
+
+        // Reset position to first active player
+        this.currentActorPos = 0;
 
         switch (this.street) {
             case FLOP:
@@ -189,12 +210,10 @@ public class Game {
     }
 
     private int _postBet(String playerId, int amount) {
-        // Bet in front of player
         Player player = this.players.get(playerId);
 
         // Check if player is going all-in
         if (amount >= player.stack) {
-            // Player goes all-in with whatever they have left
             int allInAmount = player.stack;
             player.stack = 0;
             this.playerBets.put(playerId, this.playerBets.get(playerId) + allInAmount);
@@ -208,8 +227,40 @@ public class Game {
         return amount;
     }
 
-    private void _doShowdown () {
+    private void _doShowdown() {
+        System.out.println("--- SHOWDOWN ---");
+        System.out.println("Board: " + this.board);
 
+        // Evaluate each player's hand
+        Map<String, HandEvaluator.HandResult> playerHands = new HashMap<>();
+        for (String playerId : this.activePlayerIds) {
+            Player player = this.players.get(playerId);
+            HandEvaluator.HandResult result = HandEvaluator.evaluateHand(
+                    playerId,
+                    player.hand,
+                    this.board
+            );
+            playerHands.put(playerId, result);
+            System.out.println(result);
+        }
+
+        // Find winner(s)
+        List<String> winners = HandEvaluator.findWinners(playerHands);
+
+        if (winners.size() == 1) {
+            String winnerId = winners.get(0);
+            System.out.println("Player " + winnerId + " wins " + this.pot);
+            this.players.get(winnerId).stack += this.pot;
+        } else {
+            // Split pot
+            int splitAmount = this.pot / winners.size();
+            System.out.println("Split pot between: " + winners);
+            for (String winnerId : winners) {
+                this.players.get(winnerId).stack += splitAmount;
+            }
+        }
+
+        _handOver();
     }
 
     private void _handOver() {
@@ -220,11 +271,28 @@ public class Game {
         }
 
         System.out.println("--- HAND OVER ---");
+
+        // Clear hands for next hand
+        for (Player player : this.players.values()) {
+            player.hand.clear();
+        }
     }
 
-    private  <K, V> boolean allValuesEqual(Map<K, V> map) {
+    private String getCurrentPlayerId() {
+        return this.activePlayerIds.get(this.currentActorPos);
+    }
+
+    private void validateAction(String playerId) {
+        if (!activePlayerIds.contains(playerId)) {
+            throw new IllegalStateException("Player " + playerId + " is not active");
+        }
+        if (!getCurrentPlayerId().equals(playerId)) {
+            throw new IllegalStateException("Not player " + playerId + "'s turn (current: " + getCurrentPlayerId() + ")");
+        }
+    }
+
+    private <K, V> boolean allValuesEqual(Map<K, V> map) {
         Set<V> uniqueValues = new HashSet<>(map.values());
         return uniqueValues.size() <= 1;
     }
-
 }
