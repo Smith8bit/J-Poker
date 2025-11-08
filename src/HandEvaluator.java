@@ -153,20 +153,28 @@ public class HandEvaluator {
 
     private static HandResult checkFourOfAKind(List<Card> cards) {
         Map<Integer, Integer> rankCounts = getRankCounts(cards);
+        Integer fourRank = null;
+
+        // Find four of a kind (should only be one)
         for (Map.Entry<Integer, Integer> entry : rankCounts.entrySet()) {
             if (entry.getValue() == 4) {
-                List<Integer> kickers = new ArrayList<>();
-                kickers.add(entry.getKey()); // Four of a kind rank
-                // Add highest kicker
-                for (Card c : cards) {
-                    int rank = getRankValue(c.rank());
-                    if (rank != entry.getKey()) {
-                        kickers.add(rank);
-                        break;
-                    }
-                }
-                return new HandResult(null, HandRank.FOUR_OF_A_KIND, kickers);
+                fourRank = entry.getKey();
+                break;
             }
+        }
+
+        if (fourRank != null) {
+            List<Integer> kickers = new ArrayList<>();
+            kickers.add(fourRank); // Four of a kind rank
+            // Add highest kicker
+            for (Card c : cards) {
+                int rank = getRankValue(c.rank());
+                if (rank != fourRank) {
+                    kickers.add(rank);
+                    break;
+                }
+            }
+            return new HandResult(null, HandRank.FOUR_OF_A_KIND, kickers);
         }
         return null;
     }
@@ -176,11 +184,16 @@ public class HandEvaluator {
         Integer threeRank = null;
         Integer pairRank = null;
 
+        // Find the highest three of a kind and highest pair
         for (Map.Entry<Integer, Integer> entry : rankCounts.entrySet()) {
             if (entry.getValue() == 3) {
-                threeRank = entry.getKey();
+                if (threeRank == null || entry.getKey() > threeRank) {
+                    threeRank = entry.getKey();
+                }
             } else if (entry.getValue() == 2) {
-                pairRank = entry.getKey();
+                if (pairRank == null || entry.getKey() > pairRank) {
+                    pairRank = entry.getKey();
+                }
             }
         }
 
@@ -211,20 +224,35 @@ public class HandEvaluator {
 
     private static HandResult checkThreeOfAKind(List<Card> cards) {
         Map<Integer, Integer> rankCounts = getRankCounts(cards);
+        Integer threeRank = null;
+
+        // Find the highest three of a kind
         for (Map.Entry<Integer, Integer> entry : rankCounts.entrySet()) {
             if (entry.getValue() == 3) {
-                List<Integer> kickers = new ArrayList<>();
-                kickers.add(entry.getKey());
-                // Add remaining kickers
-                for (Card c : cards) {
-                    int rank = getRankValue(c.rank());
-                    if (rank != entry.getKey()) {
-                        kickers.add(rank);
-                    }
+                if (threeRank == null || entry.getKey() > threeRank) {
+                    threeRank = entry.getKey();
                 }
-                kickers.sort(Comparator.reverseOrder());
-                return new HandResult(null, HandRank.THREE_OF_A_KIND, kickers.subList(0, 3));
             }
+        }
+
+        if (threeRank != null) {
+            List<Integer> kickers = new ArrayList<>();
+            List<Integer> otherCards = new ArrayList<>();
+
+            // Collect non-trips cards
+            for (Card c : cards) {
+                int rank = getRankValue(c.rank());
+                if (rank != threeRank) {
+                    otherCards.add(rank);
+                }
+            }
+            otherCards.sort(Comparator.reverseOrder());
+
+            // Build kicker list: trips rank first, then top 2 kickers
+            kickers.add(threeRank);
+            kickers.addAll(otherCards.subList(0, Math.min(2, otherCards.size())));
+
+            return new HandResult(null, HandRank.THREE_OF_A_KIND, kickers);
         }
         return null;
     }
@@ -260,20 +288,35 @@ public class HandEvaluator {
 
     private static HandResult checkPair(List<Card> cards) {
         Map<Integer, Integer> rankCounts = getRankCounts(cards);
+        Integer pairRank = null;
+
+        // Find the highest pair
         for (Map.Entry<Integer, Integer> entry : rankCounts.entrySet()) {
             if (entry.getValue() == 2) {
-                List<Integer> kickers = new ArrayList<>();
-                kickers.add(entry.getKey());
-                // Add remaining kickers
-                for (Card c : cards) {
-                    int rank = getRankValue(c.rank());
-                    if (rank != entry.getKey()) {
-                        kickers.add(rank);
-                    }
+                if (pairRank == null || entry.getKey() > pairRank) {
+                    pairRank = entry.getKey();
                 }
-                kickers.sort(Comparator.reverseOrder());
-                return new HandResult(null, HandRank.PAIR, kickers.subList(0, 4));
             }
+        }
+
+        if (pairRank != null) {
+            List<Integer> kickers = new ArrayList<>();
+            List<Integer> otherCards = new ArrayList<>();
+
+            // Collect non-pair cards
+            for (Card c : cards) {
+                int rank = getRankValue(c.rank());
+                if (rank != pairRank) {
+                    otherCards.add(rank);
+                }
+            }
+            otherCards.sort(Comparator.reverseOrder());
+
+            // Build kicker list: pair rank first, then top 3 kickers
+            kickers.add(pairRank);
+            kickers.addAll(otherCards.subList(0, Math.min(3, otherCards.size())));
+
+            return new HandResult(null, HandRank.PAIR, kickers);
         }
         return null;
     }
