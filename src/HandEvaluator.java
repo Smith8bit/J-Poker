@@ -32,11 +32,20 @@ public class HandEvaluator {
         private HandRank rank;
         private List<Integer> kickers; // Tiebreaker values (card ranks in order of importance)
         private String playerId;
+        private List<Card> bestHand; // The actual 5 cards that make the hand
 
         public HandResult(String playerId, HandRank rank, List<Integer> kickers) {
             this.playerId = playerId;
             this.rank = rank;
             this.kickers = kickers;
+            this.bestHand = new ArrayList<>();
+        }
+
+        public HandResult(String playerId, HandRank rank, List<Integer> kickers, List<Card> bestHand) {
+            this.playerId = playerId;
+            this.rank = rank;
+            this.kickers = kickers;
+            this.bestHand = bestHand;
         }
 
         @Override
@@ -64,9 +73,13 @@ public class HandEvaluator {
             return rank;
         }
 
+        public List<Card> getBestHand() {
+            return bestHand;
+        }
+
         @Override
         public String toString() {
-            return playerId + ": " + rank + " (kickers: " + kickers + ")";
+            return playerId + ": " + rank + " " + bestHand;
         }
     }
 
@@ -106,17 +119,20 @@ public class HandEvaluator {
         // Check for each hand type (from best to worst)
         HandResult result;
 
-        if ((result = checkRoyalFlush(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers);
-        if ((result = checkStraightFlush(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers);
-        if ((result = checkFourOfAKind(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers);
-        if ((result = checkFullHouse(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers);
-        if ((result = checkFlush(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers);
-        if ((result = checkStraight(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers);
-        if ((result = checkThreeOfAKind(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers);
-        if ((result = checkTwoPair(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers);
-        if ((result = checkPair(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers);
+        if ((result = checkRoyalFlush(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers, sorted);
+        if ((result = checkStraightFlush(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers, sorted);
+        if ((result = checkFourOfAKind(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers, sorted);
+        if ((result = checkFullHouse(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers, sorted);
+        if ((result = checkFlush(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers, sorted);
+        if ((result = checkStraight(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers, sorted);
+        if ((result = checkThreeOfAKind(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers, sorted);
+        if ((result = checkTwoPair(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers, sorted);
+        if ((result = checkPair(sorted)) != null) return new HandResult(playerId, result.rank, result.kickers, sorted);
 
-        return checkHighCard(playerId, sorted);
+        return new HandResult(playerId, HandRank.HIGH_CARD, sorted.stream()
+                .map(c -> getRankValue(c.rank()))
+                .sorted(Comparator.reverseOrder())
+                .collect(Collectors.toList()), sorted);
     }
 
     private static HandResult checkRoyalFlush(List<Card> cards) {

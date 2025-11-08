@@ -228,8 +228,9 @@ public class Game {
     }
 
     private void _doShowdown() {
-        System.out.println("--- SHOWDOWN ---");
+        System.out.println("\n=== SHOWDOWN ===");
         System.out.println("Board: " + this.board);
+        System.out.println();
 
         // Evaluate each player's hand
         Map<String, HandEvaluator.HandResult> playerHands = new HashMap<>();
@@ -241,20 +242,28 @@ public class Game {
                     this.board
             );
             playerHands.put(playerId, result);
-            System.out.println(result);
+
+            // Show each player's hole cards and best hand
+            System.out.println("Player " + playerId + " shows: " + player.hand);
+            System.out.println("  → " + result.getRank() + ": " + result.getBestHand());
+            System.out.println();
         }
 
         // Find winner(s)
         List<String> winners = HandEvaluator.findWinners(playerHands);
 
+        System.out.println("───────────────────────");
         if (winners.size() == 1) {
             String winnerId = winners.get(0);
-            System.out.println("Player " + winnerId + " wins " + this.pot);
+            HandEvaluator.HandResult winningHand = playerHands.get(winnerId);
+            System.out.println("🏆 Player " + winnerId + " wins " + this.pot + " with " + winningHand.getRank() + "!");
             this.players.get(winnerId).stack += this.pot;
         } else {
             // Split pot
             int splitAmount = this.pot / winners.size();
-            System.out.println("Split pot between: " + winners);
+            HandEvaluator.HandResult winningHand = playerHands.get(winners.get(0));
+            System.out.println("🤝 Split pot (" + splitAmount + " each) - " + winningHand.getRank());
+            System.out.println("Winners: " + winners);
             for (String winnerId : winners) {
                 this.players.get(winnerId).stack += splitAmount;
             }
