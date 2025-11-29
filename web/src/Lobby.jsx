@@ -1,19 +1,77 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import './Lobby.css'
 import { useState } from "react";
+import axios from 'axios';
 
 function Lobby() {
     const location = useLocation();
     const navigate = useNavigate();
-    const [roomCode, setroomCode] = useState();
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [roomCode, setroomCode] = useState('');
     const { username, moneyAmount } = location.state;
     
-    const handleJoinRoom = (e) => {
-  
+    const handleJoinRoom = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        
+        try {
+            const response = await axios.post('http://localhost:8080/api/joinRoom', {
+                username,
+                roomCode
+            });
+            
+            const { isFull, playersNum, players } = response.data;
+            
+            if (isFull) {
+                setError('Room is full');
+                setLoading(false);
+                return;
+            }
+            
+            // Navigate to room with all data
+            navigate(`/room/${roomCode}`, {
+                state: {
+                    username,
+                    isFull,
+                    playersNum,
+                    players
+                }
+            });
+            
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'An error occurred');
+            setLoading(false);
+        }
     }
-
-    const handleCreateRoom = (e) => {
-
+    
+    const handleCreateRoom = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        
+        try {
+            const response = await axios.post('http://localhost:8080/api/createRoom', {
+                username
+            });
+            
+            const { roomCode, isFull, playersNum, players } = response.data;
+            
+            // Navigate to the newly created room
+            navigate(`/room/${roomCode}`, {
+                state: {
+                    username,
+                    isFull,
+                    playersNum,
+                    players
+                }
+            });
+            
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'An error occurred');
+            setLoading(false);
+        }
     }
     
     return (
@@ -28,15 +86,21 @@ function Lobby() {
                 onChange={(e) => setroomCode(e.target.value)}
                 placeholder="Enter Room Code"
                 required
+                disabled={loading}
                 />
                 <br></br>
-                <button type="submit">Join Room</button>
+                <button type="submit" disabled={loading}>
+                    {loading ? 'Joining...' : 'Join Room'}
+                </button>
             </form>
 
             <div id="divider"/>
 
-            <button id="createRoom" type="sumbit" onClick={handleCreateRoom}>Create Room</button>
+            <button id="createRoom" type="button" onClick={handleCreateRoom} disabled={loading}>
+                {loading ? 'Creating...' : 'Create Room'}
+            </button>
         </div>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
         <button id="wrongName">Wait, my name is wrong.</button>
         </>
     )
