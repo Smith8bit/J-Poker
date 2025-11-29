@@ -1,3 +1,5 @@
+package dev.gamfactory.poker;
+
 import java.util.*;
 import java.util.stream.Collectors;
 

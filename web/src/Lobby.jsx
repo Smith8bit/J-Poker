@@ -6,7 +6,7 @@ function Lobby() {
     const location = useLocation();
     const navigate = useNavigate();
     const [roomCode, setroomCode] = useState();
-    const { username } = location.state;
+    const { username, moneyAmount } = location.state;
     
     const handleJoinRoom = (e) => {
   
@@ -18,7 +18,7 @@ function Lobby() {
     
     return (
         <>
-        <h3 id="username">{username}</h3>
+        <h3 id="username">{username} {moneyAmount}</h3>
         <h1>COM SCI<br/>POKER</h1>
         <div className="menu">
             <form onSubmit={handleJoinRoom}>

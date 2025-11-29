@@ -1,3 +1,5 @@
+package dev.gamfactory.poker;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +16,6 @@ public class Player {
 
     @Override
     public String toString() {
-        return String.format("Player[id=%s, stack=%d, hand=%s]", id, stack, hand);
+        return String.format("dev.gamfactory.poker.Player[id=%s, stack=%d, hand=%s]", id, stack, hand);
     }
 }
