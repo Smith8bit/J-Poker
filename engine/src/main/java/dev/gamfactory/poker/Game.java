@@ -208,6 +208,8 @@ public class Game {
             case SHOWDOWN:
                 _doShowdown();
                 break;
+            default:
+                break;
         }
     }
 
