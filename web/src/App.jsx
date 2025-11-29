@@ -36,9 +36,9 @@ function App() {
   
   return (
     <>
-      <h1>COM SCI<br/>POKER</h1>
+      <h1 className="gametitle">COM SCI<br/>POKER</h1>
       <form onSubmit={handleSubmit}>
-        <input 
+        <input className="strInput" 
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
@@ -48,7 +48,7 @@ function App() {
         />
         <br></br>
         <button type="submit" disabled={loading}>
-          {loading ? 'Joining...' : 'Join Game'}
+          {loading ? 'Joining...' : 'PLAY'}
         </button>
         {error && <p style={{ color: 'red' }}>{error}</p>}
       </form>

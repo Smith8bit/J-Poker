@@ -1,56 +1,50 @@
 #root {
+  font-family: 'Jersey 20';
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
 }
-h1 {
-  font-family: 'Jersey 20';
+
+.gametitle {
+  color: white;
   font-size: 10vw;
-  line-height: 75%;
   font-weight: 400;
+  line-height: 75%;
   padding: 0;
   margin: 0;
+  align-self: center;
 }
 
-button{
-  background-color: #51A46C;
-  border: 0;
-  border-radius: 5vw;
-  padding: 0vw 7vw;
-  cursor: pointer;
-  transition: border-color 0.25s;
-  margin-top: 2vw;
-}
-
-button h2{
-  font-family: 'Jersey 15';
-  font-size: 3vw;
-  line-height: 75%;
-  font-weight: 400;
-  color: #fff;
-  margin: 1vw;
-  -webkit-text-stroke: 0.1vw #000;
-}
-/* button:hover {
-  border-color: #000;
-  outline: 0.15vw solid blue;
-}
-button:focus,
-button:focus-visible {
-  outline: 0.2vw solid blue;
-} */
-
-form{
-  align-items: center;
-}
-
-input{
+input[type=text].strInput {
   font-family: 'Jersey 20';
   font-size: 2vw;
   color: rgba(0, 0, 0, 0.5);
-  border-radius: 5vw;
-  border: transparent;
-  padding: 1.5vw;
-  margin-top: 3vw;
+  border: 0;
+  border-radius: 10vw;
+  width: 20vw;
+  min-height: 4.5vw;
+  padding-left: 25px;
+  padding-right: 25px;
+  margin-top: 3vh;
+  margin-bottom: 2vh;
+}
+
+input[type=text]:focus {
+  outline: none;
+}
+
+button {
+  font-family: 'Jersey 20';
+  font-size: 2vw;
+  background: #51A46C;
+  color: white;
+  border: 0;
+  border-radius: 10vw;
+  width: 15vw;
+  min-height: 4vw;
+  padding-left: 25px;
+  padding-right: 25px;
+  margin-top: 1vh;
+  margin-bottom: 1vh;
 }
