@@ -1,3 +1,5 @@
+package dev.gamfactory.poker;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +77,7 @@ public class Game {
         validateAction(playerId);
 
         this.activePlayerIds.remove(playerId);
-        System.out.println("Player " + playerId + " folds.");
+        System.out.println("dev.gamfactory.poker.Player " + playerId + " folds.");
 
         if (this.activePlayerIds.size() <= 1) {
             _handOver();
@@ -98,7 +100,7 @@ public class Game {
 
         if (this.isCheckable) {
             this.CHECK_COUNTER++;
-            System.out.println("Player " + currentPlayer + " checks");
+            System.out.println("dev.gamfactory.poker.Player " + currentPlayer + " checks");
 
             if (_isRoundOver()) {
                 _progress();
@@ -116,7 +118,7 @@ public class Game {
         this.isCheckable = false;
         this.pot += _postBet(playerId, amount);
         this.currentBet = this.playerBets.get(playerId);
-        System.out.println("Player " + playerId + " bets " + amount);
+        System.out.println("dev.gamfactory.poker.Player " + playerId + " bets " + amount);
 
         if (_isRoundOver()) {
             _progress();
@@ -131,7 +133,7 @@ public class Game {
         this.isCheckable = false;
         int callAmount = this.currentBet - this.playerBets.get(playerId);
         this.pot += _postBet(playerId, callAmount);
-        System.out.println("Player " + playerId + " calls " + callAmount);
+        System.out.println("dev.gamfactory.poker.Player " + playerId + " calls " + callAmount);
 
         if (_isRoundOver()) {
             _progress();
@@ -147,7 +149,7 @@ public class Game {
         int totalAmount = this.currentBet + amount;
         this.pot += _postBet(playerId, totalAmount - this.playerBets.get(playerId));
         this.currentBet = this.playerBets.get(playerId);
-        System.out.println("Player " + playerId + " raises to " + this.currentBet);
+        System.out.println("dev.gamfactory.poker.Player " + playerId + " raises to " + this.currentBet);
 
         if (_isRoundOver()) {
             _progress();
@@ -217,7 +219,7 @@ public class Game {
             int allInAmount = player.stack;
             player.stack = 0;
             this.playerBets.put(playerId, this.playerBets.get(playerId) + allInAmount);
-            System.out.println("Player " + playerId + " is ALL-IN for " + allInAmount);
+            System.out.println("dev.gamfactory.poker.Player " + playerId + " is ALL-IN for " + allInAmount);
             return allInAmount;
         }
 
@@ -244,7 +246,7 @@ public class Game {
             playerHands.put(playerId, result);
 
             // Show each player's hole cards and best hand
-            System.out.println("Player " + playerId + " shows: " + player.hand);
+            System.out.println("dev.gamfactory.poker.Player " + playerId + " shows: " + player.hand);
             System.out.println("  → " + result.getRank() + ": " + result.getBestHand());
             System.out.println();
         }
@@ -256,7 +258,7 @@ public class Game {
         if (winners.size() == 1) {
             String winnerId = winners.get(0);
             HandEvaluator.HandResult winningHand = playerHands.get(winnerId);
-            System.out.println("🏆 Player " + winnerId + " wins " + this.pot + " with " + winningHand.getRank() + "!");
+            System.out.println("🏆 dev.gamfactory.poker.Player " + winnerId + " wins " + this.pot + " with " + winningHand.getRank() + "!");
             this.players.get(winnerId).stack += this.pot;
         } else {
             // Split pot
@@ -275,7 +277,7 @@ public class Game {
     private void _handOver() {
         if (this.activePlayerIds.size() == 1) {
             String winnerId = this.activePlayerIds.get(0);
-            System.out.println("Player " + winnerId + " wins " + this.pot + " (everyone folded)");
+            System.out.println("dev.gamfactory.poker.Player " + winnerId + " wins " + this.pot + " (everyone folded)");
             this.players.get(winnerId).stack += this.pot;
         }
 
@@ -293,7 +295,7 @@ public class Game {
 
     private void validateAction(String playerId) {
         if (!activePlayerIds.contains(playerId)) {
-            throw new IllegalStateException("Player " + playerId + " is not active");
+            throw new IllegalStateException("dev.gamfactory.poker.Player " + playerId + " is not active");
         }
         if (!getCurrentPlayerId().equals(playerId)) {
             throw new IllegalStateException("Not player " + playerId + "'s turn (current: " + getCurrentPlayerId() + ")");
