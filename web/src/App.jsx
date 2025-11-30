@@ -15,17 +15,17 @@ function App() {
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:8080/api/join', {
+      const response = await axios.post('http://localhost:8080/api/getUserInfo', {
         username
       });
       
       // Expecting response.data to have { username, cashValue }
-      const { username: returnedUsername, moneyAmount } = response.data;
+      const { username: returnedUsername, userCredit } = response.data;
       
       navigate('/Lobby', { 
         state: { 
           username: returnedUsername, 
-          moneyAmount 
+          userCredit 
         } 
       });
     } catch (err) {
