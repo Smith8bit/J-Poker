@@ -6,7 +6,7 @@
   text-align: center;
 }
 
-.gametitle {
+h1 {
   color: white;
   font-size: 10vw;
   font-weight: 400;
@@ -16,7 +16,7 @@
   align-self: center;
 }
 
-input[type=text].strInput {
+input {
   font-family: 'Jersey 20';
   font-size: 2vw;
   color: rgba(0, 0, 0, 0.5);

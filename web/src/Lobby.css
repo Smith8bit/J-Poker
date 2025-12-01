@@ -1,5 +1,6 @@
 .menu {
     display: flex;
+    padding-top: 2vh;
 }
 
 .joinRoom {
@@ -10,9 +11,30 @@
   
 }
 
+#username{
+  font-size: 3vw;
+}
+
+#createRoom {
+  height: 4vw;
+  font-size: 2vw;
+  width: 24vw;
+  height: 5vw;
+  padding-left: 25px;
+  padding-right: 25px;
+  margin-top: 6vh;
+  margin-bottom: 6vh;
+}
+
 #divider {
     background: white;
-    width: 8px;
-    height: 60px;
-    margin: 57px;
+    width: 0.5vw;
+    margin-left: 5vw;
+    margin-right: 5vw;
+}
+
+#wrongName {
+  font-size: 2vw;
+  height: 5vw;
+  align-self: center;
 }
