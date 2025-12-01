@@ -1,81 +1,54 @@
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import axios from 'axios';
-import './Lobby.css';
 
-const API_BASE_URL = 'http://localhost:8080/api';
-
-function Lobby() {
+function Lobby({ sendMessage, lastJsonMessage }) {
     const location = useLocation();
     const navigate = useNavigate();
-    
     const { username, userCredit } = location.state || {};
-
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
     const [roomId, setroomId] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
+    // 1. LISTEN: Watch for messages from the server
     useEffect(() => {
-        if (!username) {
-            navigate('/');
-        }
-    }, [username, navigate]);
-
-    const handleJoinRoom = async (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-        
-        try {
-            const response = await axios.post(`${API_BASE_URL}/joinRoom`, {
-                username,
-                roomId
-            });
+        if (lastJsonMessage !== null) {
+            const { type, payload } = lastJsonMessage;
             
-            const { isFull } = response.data;
-            
-            if (isFull) {
-                setError('Room is full');
-                setLoading(false);
-                return;
+            // If server says "JOIN_SUCCESS", go to room
+            if (type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS') {
+                navigate(`/room/${payload.roomId}`, {
+                    state: { username, userCredit }
+                });
             }
-            
-            navigate(`/room/${roomId}`, {
-                state: { username, userCredit }
-            });
-            
-        } catch (err) {
-            console.error("Join Error:", err);
-            setError(err.response?.data?.message || 'Room does not exist or server error');
-            setLoading(false);
         }
-    }
-    
-    const handleCreateRoom = async (e) => {
-        e.preventDefault();
+    }, [lastJsonMessage, navigate]);
+
+    // 2. SEND: Trigger actions via WebSocket
+    const handleJoinRoom = () => {
         setError('');
         setLoading(true);
         
-        try {
-            const response = await axios.post(`${API_BASE_URL}/createRoom`, {
-                username
-            });
-            
-            const { roomId: newRoomId } = response.data;
-            
-            navigate(`/room/${newRoomId}`, {
-                state: { username, userCredit }
-            });
-            
-        } catch (err) {
-            console.error("Create Error:", err);
-            setError(err.response?.data?.message || 'Failed to create room');
-            setLoading(false);
-        }
+        // Send JSON request
+        sendMessage(JSON.stringify({
+            action: 'join_room',
+            data: { username, roomId }
+        }));
     }
 
-    if (!username) return null; 
-    
+    const handleCreateRoom = () => {
+        setError('');
+        setLoading(true);
+
+        sendMessage(JSON.stringify({
+            action: 'create_room',
+            data: { username }
+        }));
+
+        console.log(lastJsonMessage);
+        // lastMessage is null
+        
+    }
+
     return (
         <>
             <h3 id="username">{username} : ${userCredit}</h3>
