@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import './Lobby.css'
 
 function Lobby({ sendMessage, lastJsonMessage }) {
     const location = useLocation();
@@ -69,7 +70,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
                         {loading ? 'Joining...' : 'Join Room'}
                     </button>
                 </form>
-
+                
                 <div id="divider"/>
 
                 <button 

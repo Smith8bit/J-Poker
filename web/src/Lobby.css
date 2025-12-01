@@ -1,6 +1,7 @@
 .menu {
+    height: 13em;
     display: flex;
-    padding-top: 2vh;
+    padding-top: 5vh;
 }
 
 .joinRoom {
@@ -12,13 +13,18 @@
 }
 
 #username{
+  position: fixed;
   font-size: 3vw;
+  margin-top: 0;
+  margin-left: 2vw;
+  top: 0;
+  left: 0;
 }
 
 #createRoom {
   height: 4vw;
   font-size: 2vw;
-  width: 24vw;
+  width: 22vw;
   height: 5vw;
   padding-left: 25px;
   padding-right: 25px;
@@ -34,6 +40,7 @@
 }
 
 #wrongName {
+  margin-top: 1em;
   font-size: 2vw;
   height: 5vw;
   align-self: center;
