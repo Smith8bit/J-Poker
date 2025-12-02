@@ -15,19 +15,27 @@ function App() {
   });
 
   return (
+    <>
     <div className="App">
       <Routes>
+
         <Route path="/" element={<Login />} />
         <Route 
           path="/Lobby" 
           element={<Lobby sendMessage={sendMessage} lastJsonMessage={lastJsonMessage} />} 
         />
+
+      </Routes>
+    </div>
+
+      <Routes>
         <Route 
           path="/room/:roomId" 
           element={<Gameroom sendMessage={sendMessage} lastJsonMessage={lastJsonMessage} />} 
         />
       </Routes>
-    </div>
+
+    </>
   )
 }
 
