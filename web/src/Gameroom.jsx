@@ -8,6 +8,8 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     const location = useLocation();
     const navigate = useNavigate();
 
+    const [ playersNum, setplayersNum ] = useState(0);
+
     const { username, userCredit } = location.state || {};
 
     useEffect(() => {
@@ -23,7 +25,19 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         }
     }, [username, roomId]);
 
-    
+    // Use for receive message form SERVER
+    useEffect(() => {
+        if (lastJsonMessage !== null) {
+            const { type, payload } = lastJsonMessage;
+
+            if (type === 'PLAYER_JOINED' || type === 'JOIN_SUCCESS') {
+                setplayersNum(payload.playersNum);
+            } else if (type === 'CREATE_SUCCESS') {
+                setplayersNum(payload.playersNum || 1);
+            }
+        }
+    }, [lastJsonMessage]);
+
     return (
         <>
             <h3 id="Room_ID">Room ID: {roomId}</h3>
@@ -38,6 +52,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
                 <div className="game-board">
                     <p>Waiting for other players...</p>
+                    <h3>PLAYER: {playersNum}/6</h3>
                 </div>
                 
             </div>

@@ -48,4 +48,8 @@ public class Room {
     public int getMaxPlayers() {
         return maxPlayers;
     }
+
+    public int getPlayersNumber() {
+        return players.size();
+    }
 }

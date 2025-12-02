@@ -5,6 +5,8 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component; // <--- Added for Spring detection
@@ -18,6 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Component
 public class WebsocketController extends TextWebSocketHandler {
 
+    // Map: roomId -> Set of sessions in that room
+    private final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
+    
+    // Map: sessionId -> roomId (to track which room a session is in)
+    private final Map<String, String> sessionToRoom = new ConcurrentHashMap<>();
+
     @Autowired
     private RoomRepository roomRepository;
 
@@ -26,19 +34,9 @@ public class WebsocketController extends TextWebSocketHandler {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // 1. Read the incoming JSON (formerly your @RequestBody)
+        // Read the incoming JSON (formerly your @RequestBody)
         JsonNode jsonNode = objectMapper.readTree(message.getPayload());
         String action = jsonNode.get("action").asText();
-        System.out.println(action);
-
-        // 2. Route to the correct logic
-        // if ("create_room".equals(action)) {
-        //     System.out.println("process handle...");
-        //     handleCreateRoom(session, jsonNode.get("data"));
-        // }
-        // } else if ("join_room".equals(action)) {
-        //     handleJoinRoom(session, jsonNode.get("data"));
-        // }
 
         switch (action) {
             case "create_room":
@@ -54,7 +52,6 @@ public class WebsocketController extends TextWebSocketHandler {
     private void handleCreateRoom(WebSocketSession session, JsonNode data) throws IOException {
         
         String username = data.get("username").asText();
-        System.out.println(session.toString());
         String roomId;
         boolean exists;
 
@@ -67,9 +64,15 @@ public class WebsocketController extends TextWebSocketHandler {
         newRoom.addPlayer(username);
         roomRepository.save(newRoom);
 
+        roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
+        sessionToRoom.put(session.getId(), roomId);
+
         Map<String, Object> response = Map.of(
             "type", "CREATE_SUCCESS",
-            "payload", Map.of("roomId", roomId)
+            "payload", Map.of(
+                "roomId", roomId,
+                "playersNum", newRoom.getPlayersNumber()
+            )
         );
 
         session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
@@ -89,15 +92,23 @@ public class WebsocketController extends TextWebSocketHandler {
 
             roomRepository.save(room);
             
+            roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
+            sessionToRoom.put(session.getId(), roomId);
+
             response.put("type", "JOIN_SUCCESS");
-            response.put("payload", Map.of("roomId", roomId));
+            response.put("payload", Map.of("roomId", roomId, "playersNum", room.getPlayersNumber()));
+            
+            // send updated room data to all user in the room 
+            broadcastToRoom(roomId, Map.of(
+                "type", "PLAYER_JOINED",
+                "payload", Map.of("playersNum", room.getPlayersNumber())
+            ));
+
         } else {
             response.put("type", "JOIN_ERROR");
             response.put("payload", Map.of("error", "Room does not exist."));
         }
         
-        System.out.println(response.get("type"));
-
         session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
     }
 
@@ -108,6 +119,21 @@ public class WebsocketController extends TextWebSocketHandler {
             sb.append(ALPHANUMERIC.charAt(RANDOM.nextInt(ALPHANUMERIC.length())));
         }
         return sb.toString();
+    }
+
+    // Send Message to user in the room
+    private void broadcastToRoom(String roomId, Map<String, Object> message) throws IOException {
+        Set<WebSocketSession> sessions = roomSessions.get(roomId);
+        if (sessions != null) {
+            String messageJson = objectMapper.writeValueAsString(message);
+            TextMessage textMessage = new TextMessage(messageJson);
+            
+            for (WebSocketSession session : sessions) {
+                if (session.isOpen()) {
+                    session.sendMessage(textMessage);
+                }
+            }
+        }
     }
     
 }
