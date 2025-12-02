@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react"
 import { useLocation, useParams, useNavigate} from "react-router-dom";
-import './Gameroom.css'
+import GameHeader from "./components/GameHeader";
+import PlayerArea from "./components/PlayerArea";
+import GameFooter from "./components/GameFooter";
+import './Gameroom.css';
 
 function Gameroom({ sendMessage, lastJsonMessage }) {
     const { roomId } = useParams();
-
     const location = useLocation();
     const navigate = useNavigate();
-
     const [ playersNum, setplayersNum ] = useState(0);
-
     const { username, userCredit } = location.state || {};
+    const players = [
+                    { name: username, avatar: 'bulbasaur' },
+                    { name: 'BOT_1', avatar: 'charmander' }
+                ] //For Test Frontend
 
     useEffect(() => {
         if (!username) {
@@ -56,25 +60,27 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         }
     }, [lastJsonMessage]);
 
+    const handleStartGame = () => {
+        console.log("Start Game Clicked");
+    };
+
     return (
-        <>
-            <h3 id="Room_ID">Room ID: {roomId}</h3>
-            <div style={{ padding: '20px', color: 'white', backgroundColor: '#35654d', minHeight: '100vh' }}>
-                <h1>Game Room</h1>
-                
-                <div style={{ border: '1px solid white', padding: '10px', marginBottom: '20px' }}>
-                    <p>Player: {username}</p>
-                    <p>Credits: ${userCredit}</p>
-                </div>
+        <div className="game-container font-pixel">
+            
+            {/* file in components/GaneHeader */}
+            <GameHeader 
+                userCredit={userCredit} 
+                playersCount={playersNum} 
+                roomId={roomId} 
+            /> 
 
+            {/* file in components/PlayerArea */}
+            <PlayerArea players={players} />
 
-                <div className="game-board">
-                    <p>Waiting for other players...</p>
-                    <h3>PLAYER: {playersNum}/6</h3>
-                </div>
-                
-            </div>
-        </>
+            {/* file in components/GameFooter */}
+            <GameFooter onStartGame={handleStartGame} />
+
+        </div>
     );
 }
 
