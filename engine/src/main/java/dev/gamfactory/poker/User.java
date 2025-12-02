@@ -10,8 +10,8 @@ public class User {
     private String id; // Unique MongoDB ID
     
     public String username;
-    public double userCredit;
-    private static final double startCredit = 10000;
+    public int userCredit;
+    private static final int startCredit = 10000;
 
     public User() {
     }
@@ -33,7 +33,7 @@ public class User {
         return username;
     }
 
-    public double getUserCredit() {
+    public int getUserCredit() {
         return userCredit;
     }
 
@@ -41,7 +41,7 @@ public class User {
         this.username = username;
     }
 
-    public void setUserCredit(double userCredit) {
+    public void setUserCredit(int userCredit) {
         this.userCredit = userCredit;
     }
 }

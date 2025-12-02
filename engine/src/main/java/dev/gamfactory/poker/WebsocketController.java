@@ -27,6 +27,9 @@ public class WebsocketController extends TextWebSocketHandler {
     // Map: sessionId -> roomId (to track which room a session is in)
     private final Map<String, String> sessionToRoom = new ConcurrentHashMap<>();
 
+    // Map: sessionId -> username
+    private final Map<String, String> sessionToUsername = new ConcurrentHashMap<>();
+
     @Autowired
     private RoomRepository roomRepository;
 
@@ -35,7 +38,7 @@ public class WebsocketController extends TextWebSocketHandler {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // Read the incoming JSON (formerly your @RequestBody)
+        // Read the incoming JSON
         JsonNode jsonNode = objectMapper.readTree(message.getPayload());
         String action = jsonNode.get("action").asText();
 
@@ -67,6 +70,8 @@ public class WebsocketController extends TextWebSocketHandler {
 
         roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
         sessionToRoom.put(session.getId(), roomId);
+        sessionToUsername.put(session.getId(), username);
+
 
         Map<String, Object> response = Map.of(
             "type", "CREATE_SUCCESS",
@@ -107,13 +112,14 @@ public class WebsocketController extends TextWebSocketHandler {
             
             roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
             sessionToRoom.put(session.getId(), roomId);
+            sessionToUsername.put(session.getId(), username);
 
             response.put("type", "JOIN_SUCCESS");
             response.put("payload", Map.of("roomId", roomId, "playersNum", room.getPlayersNumber()));
             
             broadcastToRoom(roomId, Map.of(
                 "type", "PLAYER_JOINED",
-                "payload", Map.of("playersNum", room.getPlayersNumber())
+                "payload", Map.of("playersNum", room.getPlayersNumber(), "players", room.getPlayers())
             ));
 
         } else {
@@ -157,15 +163,16 @@ public class WebsocketController extends TextWebSocketHandler {
             if (sessions != null) {
                 sessions.remove(session);
                 
-                // Optional: Update room player count
-                Optional<Room> room = roomRepository.findById(roomId);
-                if (room.isPresent()) {
-                    // You might want to track players differently
-                    // or remove player on disconnect
+                Optional<Room> existingRoom = roomRepository.findById(roomId);
+                if (existingRoom.isPresent()) {
+                    Room room = existingRoom.get();
+                    room.removePlayer(sessionToUsername.get(session.getId()));
+                    roomRepository.save(room);
+                    
                     broadcastToRoom(roomId, Map.of(
                         "type", "PLAYER_LEFT",
-                        "payload", Map.of("playersNum", sessions.size())
-                    ));
+                        "payload", Map.of("playersNum", room.getPlayersNumber(), "players", room.getPlayers())
+            ));
                 }
             }
         }

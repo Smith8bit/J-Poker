@@ -45,11 +45,13 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     useEffect(() => {
         if (lastJsonMessage !== null) {
             const { type, payload } = lastJsonMessage;
+            console.log(lastJsonMessage);
 
-            if (type === 'PLAYER_JOINED' || type === 'JOIN_SUCCESS') {
+            if (type === 'CREATE_SUCCESS') {
+                setplayersNum(1);
+            } else {
                 setplayersNum(payload.playersNum);
-            } else if (type === 'CREATE_SUCCESS') {
-                setplayersNum(payload.playersNum || 1);
+                // console.log(payload.players);
             }
         }
     }, [lastJsonMessage]);
