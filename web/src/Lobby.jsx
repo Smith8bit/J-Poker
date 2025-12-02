@@ -8,6 +8,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
     const { username, userCredit } = location.state || {};
     const [roomId, setroomId] = useState('');
     const [loading, setLoading] = useState(false);
+    const [fromLobby, setFromLobby] = useState(true);
     const [error, setError] = useState('');
 
     // 1. LISTEN: Watch for messages from the server
@@ -17,7 +18,8 @@ function Lobby({ sendMessage, lastJsonMessage }) {
             
             if (type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS') {
                 navigate(`/room/${payload.roomId}`, {
-                    state: { username, userCredit }
+                    
+                    state: { username, userCredit, fromLobby }
                 });
             } else {
                 setError(payload.error);
