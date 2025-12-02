@@ -52,4 +52,8 @@ public class Room {
     public int getPlayersNumber() {
         return players.size();
     }
+
+    public boolean hasPlayer(String username) {
+        return players.contains(username);
+    }
 }

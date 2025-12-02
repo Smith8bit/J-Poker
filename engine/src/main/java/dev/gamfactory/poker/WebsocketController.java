@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component; // <--- Added for Spring detection
+import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -82,15 +83,27 @@ public class WebsocketController extends TextWebSocketHandler {
         String username = data.get("username").asText();
         String roomId = data.get("roomId").asText();
 
+        // Remove old session if this user was already in a room
+        String oldRoomId = sessionToRoom.get(session.getId());
+        if (oldRoomId != null) {
+            Set<WebSocketSession> oldSessions = roomSessions.get(oldRoomId);
+            if (oldSessions != null) {
+                oldSessions.remove(session);
+            }
+        }
+
         Optional<Room> existingRoom = roomRepository.findById(roomId);
 
         Map<String, Object> response = new HashMap<>();
 
         if (existingRoom.isPresent()) {
             Room room = existingRoom.get();
-            room.addPlayer(username);
-
-            roomRepository.save(room);
+            
+            // Only add player if not already in room
+            if (!room.hasPlayer(username)) {
+                room.addPlayer(username);
+                roomRepository.save(room);
+            }
             
             roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
             sessionToRoom.put(session.getId(), roomId);
@@ -98,7 +111,6 @@ public class WebsocketController extends TextWebSocketHandler {
             response.put("type", "JOIN_SUCCESS");
             response.put("payload", Map.of("roomId", roomId, "playersNum", room.getPlayersNumber()));
             
-            // send updated room data to all user in the room 
             broadcastToRoom(roomId, Map.of(
                 "type", "PLAYER_JOINED",
                 "payload", Map.of("playersNum", room.getPlayersNumber())
@@ -136,4 +148,26 @@ public class WebsocketController extends TextWebSocketHandler {
         }
     }
     
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        String roomId = sessionToRoom.remove(session.getId());
+        
+        if (roomId != null) {
+            Set<WebSocketSession> sessions = roomSessions.get(roomId);
+            if (sessions != null) {
+                sessions.remove(session);
+                
+                // Optional: Update room player count
+                Optional<Room> room = roomRepository.findById(roomId);
+                if (room.isPresent()) {
+                    // You might want to track players differently
+                    // or remove player on disconnect
+                    broadcastToRoom(roomId, Map.of(
+                        "type", "PLAYER_LEFT",
+                        "payload", Map.of("playersNum", sessions.size())
+                    ));
+                }
+            }
+        }
+    }
 }

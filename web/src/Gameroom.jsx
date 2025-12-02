@@ -25,6 +25,22 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         }
     }, [username, roomId]);
 
+    // reconnect
+    useEffect(() => {
+        if (username && roomId) {
+            console.log(`Reconnecting to Room: ${roomId} as ${username}`);
+            
+            // Send join request to rejoin with new WebSocket session
+            sendMessage(JSON.stringify({
+                action: "join_room",
+                data: {
+                    username: username,
+                    roomId: roomId
+                }
+            }));
+        }
+    }, [username, roomId, sendMessage]);
+
     // Use for receive message form SERVER
     useEffect(() => {
         if (lastJsonMessage !== null) {
