@@ -50,7 +50,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
     }
 
     return (
-        <>
+        <div class="center-layout">
             <h3 id="username">{username} : ${userCredit}</h3>
             <h1>COM SCI<br/>POKER</h1>
             
@@ -89,7 +89,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
             </button>
             
             {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
-        </>
+        </div>
     )
 }
 
