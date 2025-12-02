@@ -9,6 +9,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     const navigate = useNavigate();
 
     const [ playersNum, setplayersNum ] = useState(0);
+    const [ players, setPlayers] = useState([]);
 
     const { username, userCredit } = location.state || {};
 
@@ -19,42 +20,46 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         }
     }, [username, navigate]);
 
+    // Use for receive message form SERVER
+    // To KENG: ตอนนี้ใช้แนวคิด ไม่ว่า Back End จะส่งข้อความอะไรมา จะUPDATEทั้งหน้าWeb => เปลืองButใครสน :D
+    // To KENG(2): รบกวนจัดหน้าให้ตามที่ออกแบบให้หน่อย แล้วก็ขอ from รับค่า BigBlind จากหัวห้องด้วย
     useEffect(() => {
-        if (username && roomId) {
-            console.log(`Connecting to Room: ${roomId} as ${username}`);
+        if (lastJsonMessage !== null) {
+            const { type, payload } = lastJsonMessage;
+
+            // if (type === 'CREATE_SUCCESS') {
+            //     setplayersNum(payload.playersNum);
+            //     setPlayers(payload.players);
+            //     console.log('Command: ',type,payload);
+            // } else {
+            //     setplayersNum(payload.playersNum);
+            //     setPlayers(payload.players);
+            //     console.log('Command: ',type,payload);
+            // }
+
+            setplayersNum(payload.playersNum);
+            setPlayers(payload.players);
+            console.log('Command: ',type,payload);
         }
-    }, [username, roomId]);
+    }, [lastJsonMessage]);
 
     // reconnect
     useEffect(() => {
-        if (username && roomId) {
-            console.log(`Reconnecting to Room: ${roomId} as ${username}`);
-            
+        console.log(`Connecting to Room: ${roomId} as ${username}`);
+
+        // To KENG: ฟังชั่นนี้ต้องทำงานเมื่อ refresh(F5) เท่านั้นฝากด้วย
+        if (playersNum == 0) {
             // Send join request to rejoin with new WebSocket session
             sendMessage(JSON.stringify({
                 action: "join_room",
                 data: {
                     username: username,
                     roomId: roomId
-                }
+                } 
             }));
         }
-    }, [username, roomId, sendMessage]);
 
-    // Use for receive message form SERVER
-    useEffect(() => {
-        if (lastJsonMessage !== null) {
-            const { type, payload } = lastJsonMessage;
-            console.log(lastJsonMessage);
-
-            if (type === 'CREATE_SUCCESS') {
-                setplayersNum(1);
-            } else {
-                setplayersNum(payload.playersNum);
-                // console.log(payload.players);
-            }
-        }
-    }, [lastJsonMessage]);
+    }, []);
 
     return (
         <>
@@ -70,7 +75,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
                 <div className="game-board">
                     <p>Waiting for other players...</p>
-                    <h3>PLAYER: {playersNum}/6</h3>
+                    <p>PLAYER: {playersNum}/6</p>
                 </div>
                 
             </div>

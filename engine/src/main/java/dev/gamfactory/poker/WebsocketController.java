@@ -77,11 +77,13 @@ public class WebsocketController extends TextWebSocketHandler {
             "type", "CREATE_SUCCESS",
             "payload", Map.of(
                 "roomId", roomId,
-                "playersNum", newRoom.getPlayersNumber()
+                "playersNum", newRoom.getPlayersNumber(),
+                "players", newRoom.getPlayers()
             )
         );
 
         session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
+        System.out.println("Sent");
     }
 
     private void handleJoinRoom(WebSocketSession session, JsonNode data) throws IOException {
@@ -103,7 +105,6 @@ public class WebsocketController extends TextWebSocketHandler {
 
         if (existingRoom.isPresent()) {
             Room room = existingRoom.get();
-            
             // Only add player if not already in room
             if (!room.hasPlayer(username)) {
                 room.addPlayer(username);
@@ -115,19 +116,19 @@ public class WebsocketController extends TextWebSocketHandler {
             sessionToUsername.put(session.getId(), username);
 
             response.put("type", "JOIN_SUCCESS");
-            response.put("payload", Map.of("roomId", roomId, "playersNum", room.getPlayersNumber()));
-            
+            response.put("payload", Map.of("roomId", roomId, "playersNum", room.getPlayersNumber(), "players", room.getPlayers()));
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
+
             broadcastToRoom(roomId, Map.of(
                 "type", "PLAYER_JOINED",
                 "payload", Map.of("playersNum", room.getPlayersNumber(), "players", room.getPlayers())
-            ));
+            ), session);
 
         } else {
             response.put("type", "JOIN_ERROR");
             response.put("payload", Map.of("error", "Room does not exist."));
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
         }
-        
-        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
     }
 
     // Helper method to generate random string
@@ -140,14 +141,15 @@ public class WebsocketController extends TextWebSocketHandler {
     }
 
     // Send Message to user in the room
-    private void broadcastToRoom(String roomId, Map<String, Object> message) throws IOException {
+    private void broadcastToRoom(String roomId, Map<String, Object> message, WebSocketSession excludeSession) throws IOException {
         Set<WebSocketSession> sessions = roomSessions.get(roomId);
         if (sessions != null) {
             String messageJson = objectMapper.writeValueAsString(message);
             TextMessage textMessage = new TextMessage(messageJson);
             
             for (WebSocketSession session : sessions) {
-                if (session.isOpen()) {
+                // Only send if open AND it is not the excluded session
+                if (session.isOpen() && !session.getId().equals(excludeSession.getId())) {
                     session.sendMessage(textMessage);
                 }
             }
@@ -172,7 +174,7 @@ public class WebsocketController extends TextWebSocketHandler {
                     broadcastToRoom(roomId, Map.of(
                         "type", "PLAYER_LEFT",
                         "payload", Map.of("playersNum", room.getPlayersNumber(), "players", room.getPlayers())
-            ));
+                    ), session);
                 }
             }
         }
