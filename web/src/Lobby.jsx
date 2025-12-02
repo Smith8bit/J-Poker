@@ -15,12 +15,15 @@ function Lobby({ sendMessage, lastJsonMessage }) {
         if (lastJsonMessage !== null) {
             const { type, payload } = lastJsonMessage;
             
-            // If server says "JOIN_SUCCESS", go to room
             if (type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS') {
                 navigate(`/room/${payload.roomId}`, {
                     state: { username, userCredit }
                 });
+            } else {
+                setError(payload.error);
+                setLoading(false);
             }
+
         }
     }, [lastJsonMessage, navigate]);
 
@@ -43,11 +46,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
         sendMessage(JSON.stringify({
             action: 'create_room',
             data: { username }
-        }));
-
-        console.log(lastJsonMessage);
-        // lastMessage is null
-        
+        }));        
     }
 
     return (
@@ -56,7 +55,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
             <h1>COM SCI<br/>POKER</h1>
             
             <div className="menu">
-                <form onSubmit={handleJoinRoom}>
+                <form>
                     <input 
                         type="text"
                         value={roomId}
@@ -66,7 +65,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
                         disabled={loading}
                     />
                     <br />
-                    <button type="submit" disabled={loading}>
+                    <button type="submit" disabled={loading} onClick={handleJoinRoom}>
                         {loading ? 'Joining...' : 'Join Room'}
                     </button>
                 </form>
@@ -83,12 +82,13 @@ function Lobby({ sendMessage, lastJsonMessage }) {
                 </button>
             </div>
 
-            {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
             
             {/* Added functionality to go back to Login */}
             <button id="wrongName" onClick={() => navigate('/')}>
                 Wait, my name is wrong.
             </button>
+            
+            {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
         </>
     )
 }

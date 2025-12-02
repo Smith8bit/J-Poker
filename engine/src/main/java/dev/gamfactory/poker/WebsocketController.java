@@ -2,7 +2,9 @@ package dev.gamfactory.poker;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component; // <--- Added for Spring detection
@@ -28,21 +30,31 @@ public class WebsocketController extends TextWebSocketHandler {
         JsonNode jsonNode = objectMapper.readTree(message.getPayload());
         String action = jsonNode.get("action").asText();
         System.out.println(action);
+
         // 2. Route to the correct logic
-        if ("create_room".equals(action)) {
-            System.out.println("process handle...");
-            handleCreateRoom(session, jsonNode.get("data"));
-        }
+        // if ("create_room".equals(action)) {
+        //     System.out.println("process handle...");
+        //     handleCreateRoom(session, jsonNode.get("data"));
+        // }
         // } else if ("join_room".equals(action)) {
         //     handleJoinRoom(session, jsonNode.get("data"));
         // }
+
+        switch (action) {
+            case "create_room":
+                handleCreateRoom(session, jsonNode.get("data"));
+                break;
+            case "join_room":
+                handleJoinRoom(session, jsonNode.get("data"));
+            default:
+                break;
+        }
     }
 
     private void handleCreateRoom(WebSocketSession session, JsonNode data) throws IOException {
         
         String username = data.get("username").asText();
-        System.out.println(username);
-
+        System.out.println(session.toString());
         String roomId;
         boolean exists;
 
@@ -63,6 +75,32 @@ public class WebsocketController extends TextWebSocketHandler {
         session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
     }
 
+    private void handleJoinRoom(WebSocketSession session, JsonNode data) throws IOException {
+        String username = data.get("username").asText();
+        String roomId = data.get("roomId").asText();
+
+        Optional<Room> existingRoom = roomRepository.findById(roomId);
+
+        Map<String, Object> response = new HashMap<>();
+
+        if (existingRoom.isPresent()) {
+            Room room = existingRoom.get();
+            room.addPlayer(username);
+
+            roomRepository.save(room);
+            
+            response.put("type", "JOIN_SUCCESS");
+            response.put("payload", Map.of("roomId", roomId));
+        } else {
+            response.put("type", "JOIN_ERROR");
+            response.put("payload", Map.of("error", "Room does not exist."));
+        }
+        
+        System.out.println(response.get("type"));
+
+        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
+    }
+
     // Helper method to generate random string
     private String generateRandomRoomId(int length) {
         StringBuilder sb = new StringBuilder(length);
@@ -71,7 +109,5 @@ public class WebsocketController extends TextWebSocketHandler {
         }
         return sb.toString();
     }
-
-    private void handleJoinRoom() {}
     
 }

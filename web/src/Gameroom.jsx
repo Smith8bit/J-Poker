@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react"
 import { useLocation, useParams, useNavigate} from "react-router-dom";
-import useWebSocket, { ReadyState } from "react-use-websocket";
 import './Gameroom.css'
 
-function Gameroom() {
+function Gameroom({ sendMessage, lastJsonMessage }) {
     const { roomId } = useParams();
 
     const location = useLocation();
@@ -23,6 +22,8 @@ function Gameroom() {
             console.log(`Connecting to Room: ${roomId} as ${username}`);
         }
     }, [username, roomId]);
+
+    
     return (
         <>
             <h3 id="Room_ID">Room ID: {roomId}</h3>

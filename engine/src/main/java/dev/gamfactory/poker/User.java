@@ -13,17 +13,14 @@ public class User {
     public double userCredit;
     private static final double startCredit = 10000;
 
-    // 1. Required: Empty constructor for Spring Data
     public User() {
     }
 
-    // 2. Your custom constructor
     public User(String username) {
         this.username = username;
         this.userCredit = startCredit; // Sets default 10000
     }
 
-    // Getters and Setters
     public String getId() {
         return id;
     }
