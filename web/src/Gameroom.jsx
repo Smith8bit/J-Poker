@@ -72,27 +72,27 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
     }, [username, roomId, sendMessage]);
 
-    useEffect(() => {
-    // ฟังก์ชันที่จะทำงานตอนปิด Tab หรือ Refresh
-    const handleUnload = () => {
-        // ส่งข้อความสุดท้ายบอก Server (ถ้า Socket ยังเปิดอยู่)
-        if (username && roomId) {
-            sendMessage(JSON.stringify({
-                action: "leave_room",
-                data: { 
-                    username,
-                    roomId   
-                }
-            }));
-        }
-    };
+//     useEffect(() => {
+//     // ฟังก์ชันที่จะทำงานตอนปิด Tab หรือ Refresh
+//     const handleUnload = () => {
+//         // ส่งข้อความสุดท้ายบอก Server (ถ้า Socket ยังเปิดอยู่)
+//         if (username && roomId) {
+//             sendMessage(JSON.stringify({
+//                 action: "leave_room",
+//                 data: { 
+//                     username,
+//                     roomId   
+//                 }
+//             }));
+//         }
+//     };
 
-    window.addEventListener("beforeunload", handleUnload);
+//     window.addEventListener("beforeunload", handleUnload);
 
-    return () => {
-        window.removeEventListener("beforeunload", handleUnload);
-    };
-}, [sendMessage, username, roomId]); // dependency
+//     return () => {
+//         window.removeEventListener("beforeunload", handleUnload);
+//     };
+// }, [sendMessage, username, roomId]); // dependency
 
     // Start (get BigBlind from Footer)
     const handleStartGame = (bigBlindValue) => {

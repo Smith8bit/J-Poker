@@ -49,30 +49,25 @@ public class WebsocketController extends TextWebSocketHandler {
             case "start_game":
                 handleStartGame(session, jsonNode.get("data"));
                 break;
-            case "leave_room": // ✅ รองรับปุ่มกดออก
+            case "leave_room":
                 handleLeaveRoom(session);
                 break;
         }
     }
 
-    // ... handleCreateRoom และ handleJoinRoom (ใช้โค้ดเดิมของคุณได้เลยครับ) ...
-    // ผมละไว้เพื่อความสั้น แต่ให้คง Logic เดิมที่คุณมีไว้นะครับ 
-    
     private void handleCreateRoom(WebSocketSession session, JsonNode data) throws IOException {
          String username = data.get("username").asText();
-         // ... (Logic random ID) ...
-         String roomId = generateRandomRoomId(6); // สมมติว่า random มาแล้ว
+         String roomId;
+         boolean exists;
+         do { roomId = generateRandomRoomId(6); exists = roomRepository.existsById(roomId); } while (exists);
          
          Room newRoom = new Room(roomId);
          Player host = new Player(session.getId(), username, 10000);
          host.setHost(true);
          newRoom.addPlayer(host);
-         System.out.println("Create Room " + roomId + " by " + username);
          roomRepository.save(newRoom);
          
          registerSession(session, roomId, username);
-         
-         // Response ...
          sendResponse(session, "CREATE_SUCCESS", roomId, newRoom);
     }
 
@@ -80,15 +75,21 @@ public class WebsocketController extends TextWebSocketHandler {
         String username = data.get("username").asText();
         String roomId = data.get("roomId").asText();
         
-        // Clear session เก่าถ้ามี ...
-        
+        String oldRoomId = sessionToRoom.get(session.getId());
+        if(oldRoomId != null) {
+            Set<WebSocketSession> oldS = roomSessions.get(oldRoomId);
+            if(oldS != null) oldS.remove(session);
+        }
+
         Optional<Room> roomOpt = roomRepository.findById(roomId);
         if (roomOpt.isPresent()) {
             Room room = roomOpt.get();
-            // Logic เช็คคนเดิม หรือ สร้างใหม่ ...
+            // เช็คว่า User เดิมไหม (ถ้าเดิมใช้ Object เดิม Host จะไม่หาย)
             Player existing = room.getPlayers().stream().filter(p -> p.getUsername().equals(username)).findFirst().orElse(null);
+            
             if(existing != null) {
                 existing.setId(session.getId());
+                System.out.println("User " + username + " reconnected.");
             } else {
                 Player p = new Player(session.getId(), username, 10000);
                 p.setHost(false);
@@ -100,68 +101,40 @@ public class WebsocketController extends TextWebSocketHandler {
             
             sendResponse(session, "JOIN_SUCCESS", roomId, room);
             broadcast(roomId, "PLAYER_JOINED", room, session);
+        } else {
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(Map.of("type", "JOIN_ERROR", "payload", Map.of("error", "Room not found")))));
         }
     }
     
-    private void handleStartGame(WebSocketSession session, JsonNode data) {
-         // ... Logic เดิม ...
+    private void handleStartGame(WebSocketSession session, JsonNode data) throws IOException {
+        String roomId = data.get("roomId").asText();
+        int bigBlind = data.has("bigBlind") ? data.get("bigBlind").asInt() : 100;
+        Optional<Room> r = roomRepository.findById(roomId);
+        if(r.isPresent()) {
+            Room room = r.get();
+            room.setBigBlind(bigBlind);
+            roomRepository.save(room);
+            broadcast(roomId, "GAME_STARTED", room, null);
+        }
     }
 
-    // ✅ 1. ฟังก์ชันกดปุ่มออก (ลบทันที)
+    // --- ฟังก์ชันกดปุ่มออก (ลบทันที) ---
     private void handleLeaveRoom(WebSocketSession session) throws IOException {
         String roomId = sessionToRoom.remove(session.getId());
         String username = sessionToUsername.remove(session.getId());
 
         if (roomId != null && username != null) {
             removeFromSessionMap(roomId, session);
-
+            
+            // ลบจาก DB ทันที
             Optional<Room> roomOpt = roomRepository.findById(roomId);
             if (roomOpt.isPresent()) {
                 Room room = roomOpt.get();
-                room.removePlayer(username); // เรียกใช้ฟังก์ชัน removePlayer ที่แก้แล้วใน Room.java
+                room.removePlayer(username);
 
                 if (room.getPlayers().isEmpty()) {
-                    roomRepository.deleteById(roomId); // ลบห้องทันที
+                    roomRepository.deleteById(roomId);
                     roomSessions.remove(roomId);
-                    System.out.println("Room " + roomId + " deleted (User left).");
-                } else {
-                    roomRepository.save(room); // บันทึกห้องที่ไม่มีคนนี้แล้ว
-                    broadcast(roomId, "PLAYER_LEFT", room, session);
-                }
-            }
-        }
-    }
-
-    // ✅ 2. ฟังก์ชันปิดแท็บ/เน็ตหลุด (รอ 5 วิค่อยลบ)
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        String roomId = sessionToRoom.remove(session.getId());
-        String username = sessionToUsername.get(session.getId()); // ดึงชื่อมาก่อนลบ
-        sessionToUsername.remove(session.getId());
-
-        if (roomId != null && username != null) {
-            removeFromSessionMap(roomId, session);
-
-            Optional<Room> roomOpt = roomRepository.findById(roomId);
-            if (roomOpt.isPresent()) {
-                Room room = roomOpt.get();
-                room.removePlayer(username); // ลบคนออกจาก Object Room (ใน Memory)
-
-                if (room.getPlayers().isEmpty()) {
-                    System.out.println("Room " + roomId + " is empty. Waiting 5s...");
-                    // เริ่มนับถอยหลัง 5 วินาที
-                    new Timer().schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            // เช็คอีกรอบว่ายังว่างจริงไหม
-                            Optional<Room> checkRoom = roomRepository.findById(roomId);
-                            if (checkRoom.isPresent() && checkRoom.get().getPlayers().isEmpty()) {
-                                roomRepository.deleteById(roomId);
-                                roomSessions.remove(roomId);
-                                System.out.println("Room " + roomId + " deleted (Timeout).");
-                            }
-                        }
-                    }, 5000);
                 } else {
                     roomRepository.save(room);
                     broadcast(roomId, "PLAYER_LEFT", room, session);
@@ -170,7 +143,65 @@ public class WebsocketController extends TextWebSocketHandler {
         }
     }
 
-    // Helper methods
+    // ---ฟังก์ชันปิดแท็บ/F5 (รอ 5 วิ ค่อยลบ)---
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        // 1. ลบออกจาก Memory Map ก่อน (เพื่อให้รู้ว่า Socket นี้ตายแล้ว)
+        String roomId = sessionToRoom.remove(session.getId());
+        String username = sessionToUsername.remove(session.getId());
+
+        if (roomId != null && username != null) {
+            removeFromSessionMap(roomId, session);
+
+            // ยังไม่ลบออกจาก DB รอเช็คก่อนว่าเขากลับมาไหม
+            System.out.println("User " + username + " disconnected. Waiting 5s...");
+
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    // 2. เช็คว่า User กลับมาออนไลน์ในห้องเดิมหรือยัง? (โดยดูจาก roomSessions)
+                    boolean isUserBack = false;
+                    Set<WebSocketSession> currentSessions = roomSessions.get(roomId);
+                    if (currentSessions != null) {
+                        for (WebSocketSession s : currentSessions) {
+                            // เช็คว่ามี Session ไหนที่เป็นของ username นี้ไหม
+                            if (username.equals(sessionToUsername.get(s.getId()))) {
+                                isUserBack = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isUserBack) {
+                        System.out.println("User " + username + " reconnected. No action needed.");
+                    } else {
+                        // 3. ถ้าไม่กลับมา -> ลบออกจาก DB จริงๆ
+                        try {
+                            Optional<Room> roomOpt = roomRepository.findById(roomId);
+                            if (roomOpt.isPresent()) {
+                                Room room = roomOpt.get();
+                                room.removePlayer(username); // ลบผู้เล่น
+
+                                if (room.getPlayers().isEmpty()) {
+                                    roomRepository.deleteById(roomId); // ลบห้อง
+                                    roomSessions.remove(roomId);
+                                    System.out.println("Room " + roomId + " deleted (Timeout).");
+                                } else {
+                                    roomRepository.save(room); // บันทึกห้อง
+                                    // แจ้งคนอื่นว่าออกแล้ว
+                                    broadcast(roomId, "PLAYER_LEFT", room, null); 
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }, 5000); // รอ 5 วินาที
+        }
+    }
+
+    // Helper methods ...
     private void registerSession(WebSocketSession session, String roomId, String username) {
         roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
         sessionToRoom.put(session.getId(), roomId);
@@ -184,15 +215,11 @@ public class WebsocketController extends TextWebSocketHandler {
 
     private void sendResponse(WebSocketSession session, String type, String roomId, Room room) throws IOException {
         Map<String, Object> payload = Map.of("roomId", roomId, "playersNum", room.getPlayersNumber(), "players", room.getPlayers());
-        Map<String, Object> response = Map.of("type", type, "payload", payload);
-        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
+        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(Map.of("type", type, "payload", payload))));
     }
 
     private void broadcast(String roomId, String type, Room room, WebSocketSession exclude) throws IOException {
-        Map<String, Object> payload = Map.of("playersNum", room.getPlayersNumber(), "players", room.getPlayers());
-        Map<String, Object> msg = Map.of("type", type, "payload", payload);
-        String json = objectMapper.writeValueAsString(msg);
-        
+        String json = objectMapper.writeValueAsString(Map.of("type", type, "payload", Map.of("playersNum", room.getPlayersNumber(), "players", room.getPlayers())));
         Set<WebSocketSession> sessions = roomSessions.get(roomId);
         if(sessions != null) {
             for(WebSocketSession s : sessions) {
