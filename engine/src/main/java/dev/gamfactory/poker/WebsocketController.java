@@ -74,35 +74,70 @@ public class WebsocketController extends TextWebSocketHandler {
     private void handleJoinRoom(WebSocketSession session, JsonNode data) throws IOException {
         String username = data.get("username").asText();
         String roomId = data.get("roomId").asText();
-        
+
+        // เคลียร์ Session เก่า
         String oldRoomId = sessionToRoom.get(session.getId());
-        if(oldRoomId != null) {
-            Set<WebSocketSession> oldS = roomSessions.get(oldRoomId);
-            if(oldS != null) oldS.remove(session);
+        if (oldRoomId != null) {
+            Set<WebSocketSession> oldSessions = roomSessions.get(oldRoomId);
+            if (oldSessions != null) oldSessions.remove(session);
         }
 
-        Optional<Room> roomOpt = roomRepository.findById(roomId);
-        if (roomOpt.isPresent()) {
-            Room room = roomOpt.get();
-            // เช็คว่า User เดิมไหม (ถ้าเดิมใช้ Object เดิม Host จะไม่หาย)
-            Player existing = room.getPlayers().stream().filter(p -> p.getUsername().equals(username)).findFirst().orElse(null);
-            
-            if(existing != null) {
-                existing.setId(session.getId());
-                System.out.println("User " + username + " reconnected.");
+        Optional<Room> existingRoom = roomRepository.findById(roomId);
+
+        if (existingRoom.isPresent()) {
+            Room room = existingRoom.get();
+
+            // 1. เช็คก่อนว่าเป็น "คนหน้าเดิม" หรือไม่?
+            Player existingPlayer = room.getPlayers().stream()
+                    .filter(p -> p.getUsername().equals(username))
+                    .findFirst()
+                    .orElse(null);
+
+            if (existingPlayer != null) {
+                existingPlayer.setId(session.getId());
+                System.out.println("User " + username + " reconnected to full room.");
+                
             } else {
-                Player p = new Player(session.getId(), username, 10000);
-                p.setHost(false);
-                room.addPlayer(p);
+                // ถ้า room.isFull() หรือ size >= 6 ให้เด้งออก
+                if (room.getPlayers().size() >= 6) { 
+                    //ห้องเต็ม ส่ง Error กลับไป
+                    Map<String, Object> errorResponse = Map.of(
+                        "type", "JOIN_ERROR", 
+                        "payload", Map.of("error", "Room is full (6/6).")
+                    );
+                    session.sendMessage(new TextMessage(objectMapper.writeValueAsString(errorResponse)));
+                    return; //จบการทำงานทันที ไม่ให้เข้า ไม่ให้บันทึก
+                }
+
+                // ถ้าไม่เต็ม -> สร้าง Player ใหม่เข้าห้อง
+                Player newPlayer = new Player(session.getId(), username, 10000);
+                newPlayer.setHost(false);
+                
+                room.addPlayer(newPlayer);
             }
+
+            // บันทึกและส่ง Response
             roomRepository.save(room);
-            
-            registerSession(session, roomId, username);
-            
-            sendResponse(session, "JOIN_SUCCESS", roomId, room);
+
+            roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
+            sessionToRoom.put(session.getId(), roomId);
+            sessionToUsername.put(session.getId(), username);
+
+            Map<String, Object> response = Map.of(
+                "type", "JOIN_SUCCESS", 
+                "payload", Map.of("roomId", roomId, "playersNum", room.getPlayersNumber(), "players", room.getPlayers())
+            );
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
+
             broadcast(roomId, "PLAYER_JOINED", room, session);
+
         } else {
-            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(Map.of("type", "JOIN_ERROR", "payload", Map.of("error", "Room not found")))));
+            // หาห้องไม่เจอ
+            Map<String, Object> response = Map.of(
+                "type", "JOIN_ERROR", 
+                "payload", Map.of("error", "Room does not exist.")
+            );
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
         }
     }
     

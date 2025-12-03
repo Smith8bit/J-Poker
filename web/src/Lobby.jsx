@@ -90,7 +90,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
                 Wait, my name is wrong.
             </button>
             
-            {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
+            {error && <p style={{position:'fixed', color: 'red', marginTop: '10px', fontSize: '2em', left:'45%'}}>{error}</p>}
         </div>
     )
 }
