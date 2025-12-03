@@ -48,6 +48,8 @@ public class WebsocketController extends TextWebSocketHandler {
                 break;
             case "join_room":
                 handleJoinRoom(session, jsonNode.get("data"));
+            case "start_game":
+                handleStartGame(session, jsonNode.get("data"));
             default:
                 break;
         }
@@ -65,8 +67,12 @@ public class WebsocketController extends TextWebSocketHandler {
         } while (exists);
 
         Room newRoom = new Room(roomId);
-        newRoom.addPlayer(username);
+        Player hostPlayer = new Player(session.getId(), username, 10000);
+        hostPlayer.setHost(true);
+        newRoom.addPlayer(hostPlayer);
+        System.out.println("DEBUG: Trying to save Room " + roomId + " to MongoDB...");
         roomRepository.save(newRoom);
+        System.out.println("DEBUG: Room " + roomId + " Saved Successfully!");
 
         roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
         sessionToRoom.put(session.getId(), roomId);
@@ -100,16 +106,30 @@ public class WebsocketController extends TextWebSocketHandler {
         }
 
         Optional<Room> existingRoom = roomRepository.findById(roomId);
-
         Map<String, Object> response = new HashMap<>();
 
         if (existingRoom.isPresent()) {
             Room room = existingRoom.get();
             // Only add player if not already in room
-            if (!room.hasPlayer(username)) {
-                room.addPlayer(username);
-                roomRepository.save(room);
+
+            Player existingPlayer = room.getPlayers().stream().filter(p -> p.getUsername().equals(username)).findFirst().orElse(null);
+
+            if (existingPlayer != null) {
+                // ✅ กรณี 1: ผู้เล่นเดิม (กด F5 หรือ Reconnect)
+                // ไม่ต้องสร้างใหม่! ใช้คนเดิม สถานะ Host ก็จะยังเป็น true เหมือนเดิม
+                // แค่อัปเดต Session ID ใหม่ให้ตรงกับ Connection ปัจจุบัน
+                existingPlayer.setId(session.getId());
+                
+                System.out.println("User " + username + " reconnected. Host status: " + existingPlayer.isHost());
+            } else {
+                // ✅ กรณี 2: ผู้เล่นใหม่จริงๆ
+                // สร้างใหม่ และให้เป็น Host = false
+                Player newPlayer = new Player(session.getId(), username, 10000); // 10000 หรือดึงจาก DB
+                newPlayer.setHost(false); 
+                room.addPlayer(newPlayer);
             }
+            
+            roomRepository.save(room);
             
             roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
             sessionToRoom.put(session.getId(), roomId);
@@ -155,10 +175,31 @@ public class WebsocketController extends TextWebSocketHandler {
             }
         }
     }
+
+    private void handleStartGame(WebSocketSession session, JsonNode data) throws IOException {
+        String roomId = data.get("roomId").asText();
+        int bigBlind = 100;
+        if (data.has("bigBlind")) bigBlind = data.get("bigBlind").asInt();
+
+        Optional<Room> roomOpt = roomRepository.findById(roomId);
+        if (roomOpt.isPresent()) {
+            Room room = roomOpt.get();
+            
+            room.setBigBlind(bigBlind); // <--- อัปเดต Big Blind
+            roomRepository.save(room);  // บันทึกลง MongoDB
+
+            // Broadcast บอกทุกคน
+            broadcastToRoom(roomId, Map.of(
+                "type", "GAME_STARTED",
+                "payload", Map.of("status", "STARTED", "bigBlind", bigBlind, "players", room.getPlayers())
+            ), null);
+        }
+    }
     
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String roomId = sessionToRoom.remove(session.getId());
+        String username = sessionToUsername.remove(session.getId());
         
         if (roomId != null) {
             Set<WebSocketSession> sessions = roomSessions.get(roomId);
@@ -168,13 +209,27 @@ public class WebsocketController extends TextWebSocketHandler {
                 Optional<Room> existingRoom = roomRepository.findById(roomId);
                 if (existingRoom.isPresent()) {
                     Room room = existingRoom.get();
-                    room.removePlayer(sessionToUsername.get(session.getId()));
-                    roomRepository.save(room);
-                    
-                    broadcastToRoom(roomId, Map.of(
-                        "type", "PLAYER_LEFT",
-                        "payload", Map.of("playersNum", room.getPlayersNumber(), "players", room.getPlayers())
-                    ), session);
+                    room.removePlayer(username);
+                    if (room.getPlayers().isEmpty()) {
+                        // CASE 1: ห้องว่าง -> ลบทิ้ง
+                        System.out.println("DEBUG: Room " + roomId + " is empty.");
+                        // roomRepository.deleteById(roomId);   // ลบจาก MongoDB ระเบิด
+                        roomSessions.remove(roomId);         // ลบจาก Memory Map
+                        
+                        System.out.println("Room " + roomId + " has been deleted (No players left).");
+                    } else {
+                        // CASE 2: ยังมีคนอยู่ -> อัปเดตและแจ้งเตือน
+                        roomRepository.save(room); // บันทึกค่าใหม่ลง MongoDB
+                        
+                        // บอกคนที่เหลือว่ามีคนออก
+                        broadcastToRoom(roomId, Map.of(
+                            "type", "PLAYER_LEFT",
+                            "payload", Map.of(
+                                "playersNum", room.getPlayersNumber(), 
+                                "players", room.getPlayers()
+                            )
+                        ), session);
+                    }
                 }
             }
         }
