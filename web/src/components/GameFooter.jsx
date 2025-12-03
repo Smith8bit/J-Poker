@@ -1,13 +1,15 @@
-import React from 'react';
+import React, {useState} from 'react';
 
-function GameFooter({ onStartGame }) {
+function GameFooter({ onStartGame, IsHost }) {
+
+    const [bigBlind, setBigBlind] = useState(100); //Default BigBlind
+
     return (
         <div className="footer-area">
             {/* ฝั่งซ้าย: Chat Log */}
             <div className="chat-box">
-                <div>CHAT LOG</div>
-                <div>SYSTEM LOG</div>
-                <div style={{opacity: 0.5}}>...waiting...</div>
+                <div style={{opacity: 0.5}}>SYSTEM LOG...</div>
+                <div>Welcome to Room!</div>
             </div>
 
             {/* ตรงกลาง: Game Rule */}
@@ -22,10 +24,23 @@ function GameFooter({ onStartGame }) {
 
             {/* ฝั่งขวา: Actions */}
             <div className="action-box">
+                {/* form รับค่า Bigblind */}
                 <div className="big-blind-input">
-                    BIG BLINDS: <input type="text" className="input-pill" />
+                    <label>BIG BLINDS:</label>
+                    <input 
+                        type="number" 
+                        className="input-pill"
+                        value={bigBlind}
+                        onChange={(e) => setBigBlind(e.target.value)}
+                    />
                 </div>
-                <button className="btn-start" onClick={onStartGame}>START</button>
+                <button className="btn-start" 
+                        onClick={onStartGame(bigBlind)} 
+                        disabled={!IsHost}
+                >
+                    {console.log(bigBlind)}
+                    START
+                </button>
             </div>
         </div>
     );
