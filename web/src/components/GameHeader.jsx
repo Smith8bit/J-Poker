@@ -2,14 +2,13 @@ import React from "react";
 import { useNavigate } from 'react-router-dom';
 import coin from "../assets/coin/coin.png";
 
-function GameHeader({ userCredit, playersCount, roomId }) {
-    const navigate = useNavigate();
+function GameHeader({ userCredit, playersCount, roomId, onExit }) {
 
     return (
         <div className="top-bar">
             {/* มุมซ้าย: ประตูออก + เงิน */}
             <div className="top-left">
-                <button className="btn-exit" onClick={() => navigate('/lobby')}>
+                <button className="btn-exit" onClick={onExit}>
                     🚪
                 </button>
             </div>

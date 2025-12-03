@@ -37,7 +37,9 @@ public class Room {
     }
     
     public void removePlayer(String username) {
-        players.removeIf(p -> p.getUsername().equals(username));
+        if (players != null) {
+             players.removeIf(p -> p.getUsername().equals(username));
+        }
     }
 
     public boolean isFull() {

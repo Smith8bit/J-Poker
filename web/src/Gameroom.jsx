@@ -57,7 +57,6 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
     // reconnect
     useEffect(() => {
-        
         // To KENG: ฟังชั่นนี้ต้องทำงานเมื่อ refresh(F5) เท่านั้นฝากด้วย
         if (username && roomId) {
             console.log(`Connecting to Room: ${roomId} as ${username}`);
@@ -73,6 +72,28 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
     }, [username, roomId, sendMessage]);
 
+    useEffect(() => {
+    // ฟังก์ชันที่จะทำงานตอนปิด Tab หรือ Refresh
+    const handleUnload = () => {
+        // ส่งข้อความสุดท้ายบอก Server (ถ้า Socket ยังเปิดอยู่)
+        if (username && roomId) {
+            sendMessage(JSON.stringify({
+                action: "leave_room",
+                data: { 
+                    username,
+                    roomId   
+                }
+            }));
+        }
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+
+    return () => {
+        window.removeEventListener("beforeunload", handleUnload);
+    };
+}, [sendMessage, username, roomId]); // dependency
+
     // Start (get BigBlind from Footer)
     const handleStartGame = (bigBlindValue) => {
         console.log(`Start Game Big Blind = ${bigBlindValue}`);
@@ -86,6 +107,17 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         }));
     };
 
+    const handleExitRoom = () => {
+        // ส่งคำสั่งบอก Server
+        sendMessage(JSON.stringify({
+            action: "leave_room",
+            data: { username, roomId }
+        }));
+        
+        // กลับไปหน้า Lobby
+        navigate('/lobby');
+    };
+
     return (
         <div className="game-container font-pixel">
             
@@ -95,6 +127,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                 userCredit={userCredit} 
                 playersCount={playersNum} 
                 roomId={roomId} 
+                onExit={handleExitRoom}
             /> 
 
             {/* file in components/PlayerArea */}
