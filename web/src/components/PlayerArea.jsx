@@ -14,7 +14,7 @@ function PlayerArea({ players }) {
                     <div key={index} className={`player-slot ${!player ? 'empty' : ''}`}>
                         {player ? (
                             <>
-                                <div className="player-name">{player}</div>
+                                <div className="player-name">{player.username} {player.host ? '👑 (HOST)' : ''}</div>
                                 {/* ถ้า Backend ส่ง avatar มาก็ใช้ player.avatar ตรง class */}
                                 <div className="avatar-sprite bulbasaur"></div> 
                             </>

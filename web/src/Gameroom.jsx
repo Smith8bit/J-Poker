@@ -11,7 +11,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     const navigate = useNavigate();
     const [ playersNum, setplayersNum ] = useState(0);
     const [ players, setPlayers] = useState([]);
-
+    const [ isHost, setIsHost ] = useState([]);
     const { username, userCredit } = location.state || {};
 
     useEffect(() => {
@@ -27,6 +27,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     useEffect(() => {
         if (lastJsonMessage !== null) {
             const { type, payload } = lastJsonMessage;
+            const currentUsername = username;
 
             // if (type === 'CREATE_SUCCESS') {
             //     setplayersNum(payload.playersNum);
@@ -38,17 +39,21 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             //     console.log('Command: ',type,payload);
             // }
             if (payload && payload.players) {
-                setplayersNum(payload.playersNum);
-                setPlayers(payload.players);
-                console.log('Command: ',type,payload);
-            }
+                const receivedPlayers = payload.players;
+                setplayersNum(receivedPlayers.length);
+                setPlayers(receivedPlayers);
+                console.log('Command: ', type, payload);
             
-            //รอ update backend สำหรับดูว่าใครเป็นหัวห้อง
-            if (type === 'ROOM_INFO' && payload.hostName === username) {
-                setIsHost(true);
+
+                const currentPlayer = receivedPlayers.find(p => p.username === currentUsername);
+                
+                if (currentPlayer) {
+                    console.log("My player Data:",currentPlayer)
+                    setIsHost(currentPlayer.host);
+                }
             }
         }
-    }, [lastJsonMessage]);
+    }, [lastJsonMessage, username]);
 
     // reconnect
     useEffect(() => {
@@ -66,7 +71,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             }));
         }
 
-    }, []);
+    }, [username, roomId, sendMessage]);
 
     // Start (get BigBlind from Footer)
     const handleStartGame = (bigBlindValue) => {
@@ -100,7 +105,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             {/* Footer: แชท, กฎ, และปุ่ม Start (ส่ง prop isHost ไปเช็คได้ถ้าอยากให้ปุ่มขึ้นเฉพาะหัวห้อง) */}
             <GameFooter 
                 onStartGame={handleStartGame} 
-                IsHost={true} //สมมุติไปก่อน รอทำbackend    ยังเหลือ Ishost(เก็บไว้กับห้องหรือไม่ก็เก็บไว้ใน ram ดีกว่า) กับ bigblinds อยู่ที่ยังไม่เชื่อม backend
+                IsHost={isHost}
                 />
 
         </div>

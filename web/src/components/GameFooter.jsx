@@ -4,6 +4,12 @@ function GameFooter({ onStartGame, IsHost }) {
 
     const [bigBlind, setBigBlind] = useState(100); //Default BigBlind
 
+    const handleStartGame = () => {
+        const blindValue = parseInt(bigBlind, 10);
+        if (isNaN(blindValue) || blindValue <= 0) return;
+        onStartGame(blindValue);
+    }
+
     return (
         <div className="footer-area">
             {/* ฝั่งซ้าย: Chat Log */}
@@ -32,13 +38,14 @@ function GameFooter({ onStartGame, IsHost }) {
                         className="input-pill"
                         value={bigBlind}
                         onChange={(e) => setBigBlind(e.target.value)}
+                        disabled={!IsHost}
                     />
                 </div>
                 <button className="btn-start" 
-                        onClick={onStartGame(bigBlind)} 
+                        onClick={handleStartGame} 
                         disabled={!IsHost}
+                        style={{ display: IsHost ? 'block' : 'none' }}
                 >
-                    {console.log(bigBlind)}
                     START
                 </button>
             </div>
