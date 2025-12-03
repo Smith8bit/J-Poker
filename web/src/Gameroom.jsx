@@ -10,16 +10,9 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     const location = useLocation();
     const navigate = useNavigate();
     const [ playersNum, setplayersNum ] = useState(0);
-<<<<<<< HEAD
-=======
     const [ players, setPlayers] = useState([]);
 
->>>>>>> 51806f7fc497ed554dc3582bc28673462a100608
     const { username, userCredit } = location.state || {};
-    const players = [
-                    { name: username, avatar: 'bulbasaur' },
-                    { name: 'BOT_1', avatar: 'charmander' }
-                ] //For Test Frontend
 
     useEffect(() => {
         if (!username) {
@@ -44,19 +37,25 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             //     setPlayers(payload.players);
             //     console.log('Command: ',type,payload);
             // }
-
-            setplayersNum(payload.playersNum);
-            setPlayers(payload.players);
-            console.log('Command: ',type,payload);
+            if (payload && payload.players) {
+                setplayersNum(payload.playersNum);
+                setPlayers(payload.players);
+                console.log('Command: ',type,payload);
+            }
+            
+            //รอ update backend สำหรับดูว่าใครเป็นหัวห้อง
+            if (type === 'ROOM_INFO' && payload.hostName === username) {
+                setIsHost(true);
+            }
         }
     }, [lastJsonMessage]);
 
     // reconnect
     useEffect(() => {
-        console.log(`Connecting to Room: ${roomId} as ${username}`);
-
+        
         // To KENG: ฟังชั่นนี้ต้องทำงานเมื่อ refresh(F5) เท่านั้นฝากด้วย
-        if (playersNum == 0) {
+        if (username && roomId) {
+            console.log(`Connecting to Room: ${roomId} as ${username}`);
             // Send join request to rejoin with new WebSocket session
             sendMessage(JSON.stringify({
                 action: "join_room",
@@ -69,14 +68,24 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
     }, []);
 
-    const handleStartGame = () => {
-        console.log("Start Game Clicked");
+    // Start (get BigBlind from Footer)
+    const handleStartGame = (bigBlindValue) => {
+        console.log(`Start Game Big Blind = ${bigBlindValue}`);
+        
+        sendMessage(JSON.stringify({
+            action: "start_game",
+            data: {
+                roomId: roomId,
+                bigBlind: parseInt(bigBlindValue) || 100 // กันเหนียวถ้าไม่ได้ใส่ค่า
+            }
+        }));
     };
 
     return (
         <div className="game-container font-pixel">
             
             {/* file in components/GaneHeader */}
+            {/* Header: แสดงเงินและจำนวนคน */}
             <GameHeader 
                 userCredit={userCredit} 
                 playersCount={playersNum} 
@@ -84,22 +93,17 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             /> 
 
             {/* file in components/PlayerArea */}
+            {/* Player Area: แสดงตัวละครรอบโต๊ะ */}
             <PlayerArea players={players} />
 
-<<<<<<< HEAD
             {/* file in components/GameFooter */}
-            <GameFooter onStartGame={handleStartGame} />
+            {/* Footer: แชท, กฎ, และปุ่ม Start (ส่ง prop isHost ไปเช็คได้ถ้าอยากให้ปุ่มขึ้นเฉพาะหัวห้อง) */}
+            <GameFooter 
+                onStartGame={handleStartGame} 
+                IsHost={true} //สมมุติไปก่อน รอทำbackend    ยังเหลือ Ishost(เก็บไว้กับห้องหรือไม่ก็เก็บไว้ใน ram ดีกว่า) กับ bigblinds อยู่ที่ยังไม่เชื่อม backend
+                />
 
         </div>
-=======
-                <div className="game-board">
-                    <p>Waiting for other players...</p>
-                    <p>PLAYER: {playersNum}/6</p>
-                </div>
-                
-            </div>
-        </>
->>>>>>> 51806f7fc497ed554dc3582bc28673462a100608
     );
 }
 
