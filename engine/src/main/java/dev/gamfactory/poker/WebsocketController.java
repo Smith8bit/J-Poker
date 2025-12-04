@@ -110,9 +110,19 @@ public class WebsocketController extends TextWebSocketHandler {
                 existingPlayer.setId(session.getId());
             } else {
                 // NEW player
-                Player p = new Player(session.getId(), username, 10000);
-                p.setHost(false);
-                room.addPlayer(p);
+                if (room.getPlayers().size() >= 6) { 
+                    //ห้องเต็ม ส่ง Error กลับไป
+                    Map<String, Object> errorResponse = Map.of(
+                        "type", "JOIN_ERROR", 
+                        "payload", Map.of("error", "Room is full (6/6).")
+                    );
+                session.sendMessage(new TextMessage(objectMapper.writeValueAsString(errorResponse)));
+                    return; //จบการทำงานทันที ไม่ให้เข้า ไม่ให้บันทึก
+                } else {
+                    Player p = new Player(session.getId(), username, 10000);
+                    p.setHost(false);
+                    room.addPlayer(p);
+                }
             }
             
             roomRepository.save(room);
