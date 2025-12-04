@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import './Lobby.css'
 
@@ -8,27 +8,37 @@ function Lobby({ sendMessage, lastJsonMessage }) {
     const { username, userCredit } = location.state || {};
     const [roomId, setroomId] = useState('');
     const [loading, setLoading] = useState(false);
-    const [fromLobby, setFromLobby] = useState(true);
     const [error, setError] = useState('');
+
+    const prevMessageRef = useRef(lastJsonMessage); //เช็คข้อความเก่าหรอใหม่
 
     // 1. LISTEN: Watch for messages from the server
     useEffect(() => {
-            if (lastJsonMessage !== null) {
+            if (lastJsonMessage !== null && lastJsonMessage !== prevMessageRef.current) {
                 const { type, payload } = lastJsonMessage;
-                if ((type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS') && loading) {
-                    navigate(`/room/${payload.roomId}`, {
-                        state: { username, userCredit }
-                    });
-                } else if (type === 'JOIN_ERROR' || type === 'CREATE_ERROR') {
-                    setError(payload.error);
-                    setLoading(false);
+                
+                if(loading){
+                    if ((type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS')) {
+                        navigate(`/room/${payload.roomId}`, {
+                            state: { username, userCredit }
+                        });
+                    } else if (type === 'JOIN_ERROR' || type === 'CREATE_ERROR') {
+                        setError(payload.error);
+                        setLoading(false);
+                    }
                 }
 
+                // อัปเดต Ref ว่าข้อความนี้ดูไปแล้วนะ
+                prevMessageRef.current = lastJsonMessage;
             }
-        }, [lastJsonMessage, navigate, loading]);
+        }, [lastJsonMessage, navigate, loading, username, userCredit]);
 
     // 2. SEND: Trigger actions via WebSocket
     const handleJoinRoom = () => {
+
+        // จำค่าข้อความปัจจุบันไว้ว่าเป็น "ของเก่า" อย่าเอามาคิด
+        prevMessageRef.current = lastJsonMessage;
+
         setError('');
         setLoading(true);
         
@@ -39,8 +49,11 @@ function Lobby({ sendMessage, lastJsonMessage }) {
         }));
     }
 
-    const handleCreateRoom = (e) => {
-        e.preventDefault();
+    const handleCreateRoom = () => {
+
+        // จำค่าข้อความปัจจุบันไว้ว่าเป็น "ของเก่า" อย่าเอามาคิด
+        prevMessageRef.current = lastJsonMessage;
+
         setError('');
         setLoading(true);
 
