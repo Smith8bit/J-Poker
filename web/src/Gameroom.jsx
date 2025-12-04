@@ -49,6 +49,10 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                 setPlayersNum(payload.playersNum);
                 setPlayers(payload.players);
             }
+
+            if (type === 'GAME_STARTED'){
+                setIsPlaying(true);
+            }
         }
     }, [lastJsonMessage, username]);
 
