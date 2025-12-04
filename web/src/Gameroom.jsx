@@ -81,7 +81,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         }));
         
         // กลับไปหน้า Lobby
-        navigate('/lobby', {
+        navigate('/Lobby', {
             state: { username, userCredit }
         });
     };

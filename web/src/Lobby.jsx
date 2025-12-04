@@ -13,20 +13,19 @@ function Lobby({ sendMessage, lastJsonMessage }) {
 
     // 1. LISTEN: Watch for messages from the server
     useEffect(() => {
-        if (lastJsonMessage !== null) {
-            const { type, payload } = lastJsonMessage;
-            
-            if (type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS') {
-                navigate(`/room/${payload.roomId}`, {
-                    state: { username, userCredit }
-                });
-            } else {
-                setError(payload.error);
-                setLoading(false);
-            }
+            if (lastJsonMessage !== null) {
+                const { type, payload } = lastJsonMessage;
+                if ((type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS') && loading) {
+                    navigate(`/room/${payload.roomId}`, {
+                        state: { username, userCredit }
+                    });
+                } else if (type === 'JOIN_ERROR' || type === 'CREATE_ERROR') {
+                    setError(payload.error);
+                    setLoading(false);
+                }
 
-        }
-    }, [lastJsonMessage, navigate]);
+            }
+        }, [lastJsonMessage, navigate, loading]);
 
     // 2. SEND: Trigger actions via WebSocket
     const handleJoinRoom = () => {
@@ -40,7 +39,8 @@ function Lobby({ sendMessage, lastJsonMessage }) {
         }));
     }
 
-    const handleCreateRoom = () => {
+    const handleCreateRoom = (e) => {
+        e.preventDefault();
         setError('');
         setLoading(true);
 
