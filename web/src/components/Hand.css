@@ -1,18 +1,17 @@
-/* 1. Center the text and the container */
 .hand {
-  text-align: center; /* Centers the <h3> text */
+  text-align: center;
   margin-bottom: 20px;
+  margin-left: auto;
 }
 
 .imgContainer {
   display: flex;
-  justify-content: center; /* Centers the cards horizontally */
-  align-items: center;    /* Aligns them vertically relative to each other */
+  justify-content: center; 
+  align-items: center; 
 }
 
-/* 2. Style the individual card wrappers */
 .cardWrapper {
-  /* The overlap (from previous step) */
+
   margin-left: -30px;
   transition: transform 0.2s ease;
 }
@@ -21,15 +20,19 @@
   margin-left: 0;
 }
 
-/* 3. The "Second image below first" logic (Staggered Effect) */
-/* This targets the 2nd, 4th, 6th cards (Evens) and pushes them down */
+
 .cardWrapper:nth-child(even) {
-  transform: translateY(20px); /* Adjust 20px to move them lower/higher */
+  transform: translateY(20px);
 }
 
-/* OPTIONAL: Hover effect to bring card to front */
+
 .cardWrapper:hover {
-  transform: translateY(-15px) scale(1.1); /* Overrides the stagger on hover */
+  transform: translateY(-15px) scale(1.1);
   z-index: 10;
   position: relative;
+}
+
+img {
+  display: 'block';
+  width: 160px;
 }

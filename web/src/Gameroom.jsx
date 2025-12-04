@@ -106,6 +106,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                     userCredit={userCredit}
                     roomId={roomId}
                     navigate={navigate}
+                    // bigBlind={bigBlindValue}
                 />
             </div>
         )

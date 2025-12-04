@@ -12,7 +12,6 @@ function Hand({ cards }) {
                         <img
                             src={new URL(`../assets/cards/${card}.svg`, import.meta.url).href}
                             alt={card}
-                            style={{ width: '100px', display: 'block' }} // Basic styling
                         />
                     </div>
                 ))}

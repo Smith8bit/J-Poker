@@ -1,7 +1,8 @@
 import Hand from "./Hand"
 import Table from "./Table"
+import './Playing.css'
 
-function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, navigate}) {
+function Playing({ sendMessage, username, userCredit, roomId, navigate, bigBlind}) {
 
     const handleExitRoom = () => {
         // ส่งคำสั่งบอก Server
