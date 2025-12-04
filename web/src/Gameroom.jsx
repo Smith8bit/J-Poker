@@ -3,6 +3,7 @@ import { useLocation, useParams, useNavigate } from "react-router-dom";
 import GameHeader from "./components/GameHeader";
 import PlayerArea from "./components/PlayerArea";
 import GameFooter from "./components/GameFooter";
+import Playing from "./components/Playing";
 import './Gameroom.css';
 
 function Gameroom({ sendMessage, lastJsonMessage }) {
@@ -14,6 +15,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     const [ playersNum, setPlayersNum ] = useState(0);
     const [ players, setPlayers] = useState([]);
     const [ isHost, setIsHost ] = useState(false);
+    const [ isPlaying, setIsPlaying] = useState(false);
 
     // Receive user data from Lobby.jsx
     const { username, userCredit } = location.state || {};
@@ -71,6 +73,8 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                 bigBlind: parseInt(bigBlindValue) || 100 // กันเหนียวถ้าไม่ได้ใส่ค่า
             }
         }));
+
+        setIsPlaying(true);
     };
 
     const handleExitRoom = () => {
@@ -85,6 +89,27 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             state: { username, userCredit }
         });
     };
+
+    if (isPlaying) {
+        return (
+            <div className="game-container font-pixel">
+                <GameHeader 
+                    userCredit={userCredit} 
+                    playersCount={playersNum} 
+                    roomId={roomId} 
+                    onExit={handleExitRoom}
+                /> 
+                <Playing 
+                    sendMessage={sendMessage} 
+                    lastJsonMessage={lastJsonMessage}
+                    username={username}
+                    userCredit={userCredit}
+                    roomId={roomId}
+                    navigate={navigate}
+                />
+            </div>
+        )
+    }
 
     return (
         <div className="game-container font-pixel">
