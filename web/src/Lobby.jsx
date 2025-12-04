@@ -18,8 +18,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
             
             if (type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS') {
                 navigate(`/room/${payload.roomId}`, {
-                    
-                    state: { username, userCredit, fromLobby }
+                    state: { username, userCredit }
                 });
             } else {
                 setError(payload.error);
@@ -52,7 +51,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
     }
 
     return (
-        <div class="center-layout">
+        <div className="center-layout">
             <h3 id="username">{username} : ${userCredit}</h3>
             <h1>COM SCI<br/>POKER</h1>
             

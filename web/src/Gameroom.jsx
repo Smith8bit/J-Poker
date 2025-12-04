@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useLocation, useParams, useNavigate} from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import GameHeader from "./components/GameHeader";
 import PlayerArea from "./components/PlayerArea";
 import GameFooter from "./components/GameFooter";
@@ -9,11 +9,16 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     const { roomId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const [ playersNum, setplayersNum ] = useState(0);
+
+    // State
+    const [ playersNum, setPlayersNum ] = useState(0);
     const [ players, setPlayers] = useState([]);
-    const [ isHost, setIsHost ] = useState([]);
+    const [ isHost, setIsHost ] = useState(false);
+
+    // Receive user data from Lobby.jsx
     const { username, userCredit } = location.state || {};
 
+    // Redirect if user typed URL manually
     useEffect(() => {
         if (!username) {
             alert("Please login first!");
@@ -21,78 +26,39 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         }
     }, [username, navigate]);
 
-    // Use for receive message form SERVER
-    // To KENG: ตอนนี้ใช้แนวคิด ไม่ว่า Back End จะส่งข้อความอะไรมา จะUPDATEทั้งหน้าWeb => เปลืองButใครสน :D
-    // To KENG(2): รบกวนจัดหน้าให้ตามที่ออกแบบให้หน่อย แล้วก็ขอ from รับค่า BigBlind จากหัวห้องด้วย
+    // Handle Messages from Server
     useEffect(() => {
         if (lastJsonMessage !== null) {
             const { type, payload } = lastJsonMessage;
-            const currentUsername = username;
 
-            // if (type === 'CREATE_SUCCESS') {
-            //     setplayersNum(payload.playersNum);
-            //     setPlayers(payload.players);
-            //     console.log('Command: ',type,payload);
-            // } else {
-            //     setplayersNum(payload.playersNum);
-            //     setPlayers(payload.players);
-            //     console.log('Command: ',type,payload);
-            // }
-            if (payload && payload.players) {
-                const receivedPlayers = payload.players;
-                setplayersNum(receivedPlayers.length);
-                setPlayers(receivedPlayers);
-                console.log('Command: ', type, payload);
+            // Handle Join/Updates
+            if (type === 'JOIN_SUCCESS' || type === 'PLAYER_JOINED' || type === 'PLAYER_LEFT') {
+                setPlayersNum(payload.playersNum);
+                setPlayers(payload.players);
+
+                // Check if I am the host
+                const me = payload.players.find(p => p.username === username);
+                if (me) setIsHost(me.host);
+            }
             
-
-                const currentPlayer = receivedPlayers.find(p => p.username === currentUsername);
-                
-                if (currentPlayer) {
-                    console.log("My player Data:",currentPlayer)
-                    setIsHost(currentPlayer.host);
-                }
+            // Handle Create Success (if applicable here)
+            if (type === 'CREATE_SUCCESS') {
+                setIsHost(true);
+                setPlayersNum(payload.playersNum);
+                setPlayers(payload.players);
             }
         }
     }, [lastJsonMessage, username]);
 
-    // reconnect
+    // New Reconnect method -> let Backend manages = Backend trigger reconnect logic
     useEffect(() => {
-        // To KENG: ฟังชั่นนี้ต้องทำงานเมื่อ refresh(F5) เท่านั้นฝากด้วย
         if (username && roomId) {
-            console.log(`Connecting to Room: ${roomId} as ${username}`);
-            // Send join request to rejoin with new WebSocket session
             sendMessage(JSON.stringify({
                 action: "join_room",
-                data: {
-                    username: username,
-                    roomId: roomId
-                } 
+                data: { username, roomId }
             }));
         }
-
     }, [username, roomId, sendMessage]);
-
-//     useEffect(() => {
-//     // ฟังก์ชันที่จะทำงานตอนปิด Tab หรือ Refresh
-//     const handleUnload = () => {
-//         // ส่งข้อความสุดท้ายบอก Server (ถ้า Socket ยังเปิดอยู่)
-//         if (username && roomId) {
-//             sendMessage(JSON.stringify({
-//                 action: "leave_room",
-//                 data: { 
-//                     username,
-//                     roomId   
-//                 }
-//             }));
-//         }
-//     };
-
-//     window.addEventListener("beforeunload", handleUnload);
-
-//     return () => {
-//         window.removeEventListener("beforeunload", handleUnload);
-//     };
-// }, [sendMessage, username, roomId]); // dependency
 
     // Start (get BigBlind from Footer)
     const handleStartGame = (bigBlindValue) => {
@@ -115,7 +81,9 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         }));
         
         // กลับไปหน้า Lobby
-        navigate('/lobby');
+        navigate('/lobby', {
+            state: { username, userCredit }
+        });
     };
 
     return (
