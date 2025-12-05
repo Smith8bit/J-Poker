@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-
 import Hand from "./Hand"
 import Table from "./Table"
 import PlayersStatus from "./PlayersStatus"
@@ -85,9 +84,14 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
             />
         </div>
         <div className="footer">
-            <div className="chatLog"></div>
+            <div className="chat-box">
+                <div style={{opacity: 0.5}}>SYSTEM LOG...</div>
+                <div>Welcome to Room!</div>
+            </div>
+            
             {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
-            <PlayersStatus />
+            <PlayersStatus roomPlayers={['A', 'B', 'C', 'D', 'E', 'F']} activePlayers={['D', 'F']} />
+
              {/* ปุ่ม Action แสดงเมื่อเป็นผู้เล่นในตานั้น */}
             <div className="actions-container">
                 <div className="betRaise">
