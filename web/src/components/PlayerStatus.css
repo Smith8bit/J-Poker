@@ -1,0 +1,23 @@
+.status-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, auto); 
+    gap: 12px;
+}
+
+.player-avatar {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center; 
+}
+
+.player-name {
+    font-size: 32px;
+}
+
+.img-avatar {
+    width: 100px;
+    height: auto;
+    object-fit: cover;
+}

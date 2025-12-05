@@ -126,10 +126,15 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
         </div>
         
         <div className="footer">
-            <div className="chatLog">
+            <div className="chat-box">
+                <div style={{opacity: 0.5}}>SYSTEM LOG...</div>
+                <div>Welcome to Room!</div>
             </div>
+            
+            {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
+            <PlayersStatus roomPlayers={['A', 'B', 'C', 'D', 'E', 'F']} activePlayers={['D', 'F']} />
 
-            {/* Action buttons - only show when it's my turn */}
+             {/* ปุ่ม Action แสดงเมื่อเป็นผู้เล่นในตานั้น */}
             <div className="actions-container">
                 <div className="betRaise">
                     <button 
