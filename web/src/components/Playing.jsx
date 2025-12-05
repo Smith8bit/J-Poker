@@ -33,22 +33,18 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
             }
 
             if (type === 'GAME_OVER') {
-                // 1. สร้างข้อความประกาศผล
                 let msg = "Game Over!\n";
                 payload.winners.forEach(w => {
                     msg += `${w.username} wins $${w.amount} (${w.handRank})\n`;
                 });
 
-                // 2. โชว์ Alert
                 alert(msg);
 
-                // 3. เด้งกลับไปหน้า (Lobby)
-                // ส่ง state กลับไปด้วยเผื่อต้องใช้
                 navigate(`/Lobby`, { 
                     state: { 
                         username: username, 
                         roomId: roomId,
-                        userCredit: userCredit // (จริงๆ ควร Update จาก payload.players ด้วย)
+                        userCredit: userCredit
                     } 
                 });
             }
@@ -102,12 +98,10 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
     return (
         <>
         <div className="handTable">
-            {/* Your Hand */}
             {myPlayer && myPlayer.hand && (
                 <Hand cards={myPlayer.hand} />
             )}
             
-            {/* Table with community cards and pot */}
             <Table 
                 cards={gameState.board || []}
                 pot={gameState.pot}
@@ -115,7 +109,6 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
                 bigBlind={gameState.bigBlind}
             />
 
-            {/* Players Status */}
             <PlayersStatus 
                 players={gameState.players}
                 activePlayerIds={gameState.activePlayerIds}
@@ -177,7 +170,7 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
                         onClick={() => isMyTurn() && !canCheck() && handleAction('call')}
                         disabled={!isMyTurn() || canCheck()}
                     >
-                        {/* โชว์ยอดส่วนต่างที่ต้องจ่ายเพิ่ม (ไม่ใช่ยอดเต็ม) */}
+                        {/* โชว์ยอดส่วนต่างที่ต้องจ่ายเพิ่ม */}
                         CALL ${getCallAmount()}
                     </button>
 

@@ -2,11 +2,9 @@ import "./Table.css"
 
 function Table({ cards, pot, currentBet, bigBlind }) {
     
-    // กันเหนียวเผื่อ cards เป็น null ส่งมา
     const safeCards = cards || [];
     const comCards = [...safeCards];
     
-    // เติมไพ่ให้ครบ 5 ใบด้วยคำว่า 'back'
     const items_needed = 5 - safeCards.length;
     for (let i = 0; i < items_needed; i++) {
         comCards.push('back');
@@ -18,7 +16,6 @@ function Table({ cards, pot, currentBet, bigBlind }) {
             <div className="">POT: {pot}</div>
             <div className="communityCards">
                 {comCards.map((card, index) => {
-                    // 🔥 1. เช็คว่าเป็นไพ่คว่ำ ('back') หรือไม่?
                     const isBack = card === 'back';
                     const fileName = isBack 
                         ? 'back.svg'
