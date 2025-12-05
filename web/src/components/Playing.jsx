@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 
 import Hand from "./Hand"
 import Table from "./Table"
+import PlayersStatus from "./PlayersStatus"
 import './Playing.css'
 
 function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, navigate, bigBlind }) {
@@ -77,13 +78,35 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
     return (
         <>
         <div className="handTable">
-            <Hand cards={['AS', '2S']} />
+            <Hand cards={myHand} />
             <Table 
-                cards={['7H', 'JS']}
-                currentBet={0}
+                cards={communityCards}
+                currentBet={setCurrentBet}
             />
         </div>
-        <button onClick={handleExitRoom}>exist</button>
+        <div className="footer">
+            <div className="chatLog"></div>
+            {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
+            <PlayersStatus />
+             {/* ปุ่ม Action แสดงเมื่อเป็นผู้เล่นในตานั้น */}
+            <div className="actions-container">
+                <div className="betRaise">
+                    <button className="action-btn">BET</button>
+                    <button className="action-btn">RAISE</button>
+                    <input  type="number"
+                            className="bet-input"
+                            placeholder="NUMBER OF BET/RAISE"
+                            min={bigBlind}
+                            
+                    />
+                </div>
+                <div className="checkCallFold">
+                    <button className="action-btn">CHECK</button>
+                    <button className="action-btn">CALL</button>
+                    <button className="action-btn">FOLD</button>
+                </div>
+            </div>
+        </div>
         </>
     );
 }
