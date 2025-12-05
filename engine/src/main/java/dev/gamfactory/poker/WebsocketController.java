@@ -7,7 +7,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,9 +29,15 @@ public class WebsocketController extends TextWebSocketHandler {
     private final Map<String, String> sessionToRoom = new ConcurrentHashMap<>();
     private final Map<String, String> sessionToUsername = new ConcurrentHashMap<>();
     private final Map<String, TimerTask> scheduledDisconnects = new ConcurrentHashMap<>();
+    
+    // เก็บ Game objects ใน memory (ไม่ persist ใน database)
+    private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
 
     @Autowired
     private RoomRepository roomRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -55,6 +64,9 @@ public class WebsocketController extends TextWebSocketHandler {
                 break;
             case "leave_room": 
                 handleLeaveRoom(session);
+                break;
+            case "game_action":
+                handleGameAction(session, data);
                 break;
         }
     }
@@ -106,18 +118,15 @@ public class WebsocketController extends TextWebSocketHandler {
                 .orElse(null);
 
             if (existingPlayer != null) {
-                // UPDATE existing player's session ID (Don't reset chips)
                 existingPlayer.setId(session.getId());
             } else {
-                // NEW player
                 if (room.getPlayers().size() >= 6) { 
-                    //ห้องเต็ม ส่ง Error กลับไป
                     Map<String, Object> errorResponse = Map.of(
                         "type", "JOIN_ERROR", 
                         "payload", Map.of("error", "Room is full (6/6).")
                     );
-                session.sendMessage(new TextMessage(objectMapper.writeValueAsString(errorResponse)));
-                    return; //จบการทำงานทันที ไม่ให้เข้า ไม่ให้บันทึก
+                    session.sendMessage(new TextMessage(objectMapper.writeValueAsString(errorResponse)));
+                    return;
                 } else {
                     Player p = new Player(session.getId(), username, 10000);
                     p.setHost(false);
@@ -133,22 +142,138 @@ public class WebsocketController extends TextWebSocketHandler {
 
             broadcast(roomId, "PLAYER_JOINED", room, session);
         } else {
-            session.sendMessage(new TextMessage(objectMapper.writeValueAsString( Map.of("type", "JOIN_ERROR", "payload", Map.of("error", "Room does not exist.")))));
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(
+                Map.of("type", "JOIN_ERROR", "payload", Map.of("error", "Room does not exist."))
+            )));
         }
     }
     
     private void handleStartGame(WebSocketSession session, JsonNode data) throws IOException {
         String roomId = data.get("roomId").asText();
         int bigBlind = data.has("bigBlind") ? data.get("bigBlind").asInt() : 100;
-        Optional<Room> r = roomRepository.findById(roomId);
-        if(r.isPresent()) {
-            Room room = r.get();
+        
+        Optional<Room> roomOpt = roomRepository.findById(roomId);
+        if(roomOpt.isPresent()) {
+            Room room = roomOpt.get();
             room.setBigBlind(bigBlind);
-            roomRepository.save(room);
+            
+            // Send GAME_STARTED to all players first
             broadcast(roomId, "GAME_STARTED", room, null);
+            
+            // Start the game engine
+            room.startGame(userRepository);
+            
+            // เก็บ Game object ใน memory
+            activeGames.put(roomId, room.getGame());
+            
+            roomRepository.save(room);
+            
+            // Send game state to all players
+            broadcastGameState(roomId, room);
+            System.out.println("Game started in room: " + roomId);
         }
     }
-    // Exist Button Handler
+
+    private void handleGameAction(WebSocketSession session, JsonNode data) throws IOException {
+        String roomId = sessionToRoom.get(session.getId());
+        String username = sessionToUsername.get(session.getId());
+        
+        if (roomId == null || username == null) {
+            sendError(session, "Not in a room");
+            return;
+        }
+
+        // ดึง Game จาก memory แทน
+        Game game = activeGames.get(roomId);
+        
+        if (game == null) {
+            sendError(session, "Game not started");
+            return;
+        }
+
+        Optional<Room> roomOpt = roomRepository.findById(roomId);
+        if (!roomOpt.isPresent()) {
+            sendError(session, "Room not found");
+            return;
+        }
+
+        Room room = roomOpt.get();
+
+        String actionType = data.get("actionType").asText();
+        String playerId = session.getId();
+
+        try {
+            switch (actionType) {
+                case "fold":
+                    game.fold(playerId);
+                    break;
+                case "check":
+                    game.check();
+                    break;
+                case "call":
+                    game.call(playerId);
+                    break;
+                case "bet":
+                    int betAmount = data.get("amount").asInt();
+                    game.bet(playerId, betAmount);
+                    break;
+                case "raise":
+                    int raiseAmount = data.get("amount").asInt();
+                    game.raise(playerId, raiseAmount);
+                    break;
+                default:
+                    sendError(session, "Unknown action: " + actionType);
+                    return;
+            }
+            if (game.gameOverData != null) {
+                System.out.println("Saving updated credits to Database...");
+                for (Player p : game.players.values()) {    
+                    Optional<User> userOpt = userRepository.findByUsername(p.getUsername());
+                    if (userOpt.isPresent()) {
+                        User user = userOpt.get();
+                        // อัปเดตเงินใน DB ให้ตรงกับเงินในเกม (Stack)
+                        user.setUserCredit(p.getStack()); 
+                        userRepository.save(user); // บันทึก!
+                        System.out.println("   -> Updated " + user.getUsername() + ": " + user.getUserCredit());
+                    }
+                }
+
+                room.getPlayers().clear();
+                room.getPlayers().addAll(game.players.values());
+                
+                Map<String, Object> payload = new HashMap<>(game.gameOverData);
+                // เพิ่มข้อมูล players ล่าสุดไปด้วย (เพื่ออัปเดตเงิน)
+                payload.put("players", room.getPlayers()); 
+                
+                String json = objectMapper.writeValueAsString(Map.of(
+                    "type", "GAME_OVER", 
+                    "payload", payload
+                ));
+                
+                // Broadcast ให้ทุกคน
+                for(WebSocketSession s : roomSessions.get(roomId)) {
+                    if(s.isOpen()) s.sendMessage(new TextMessage(json));
+                }
+                
+                // 🔥 เคลียร์ค่าทิ้ง เพื่อไม่ให้ส่งซ้ำ
+                game.gameOverData = null; 
+                
+            } else {
+                // ถ้าเกมยังไม่จบ ก็ส่ง GAME_STATE ตามปกติ
+                broadcastGameState(roomId, room);
+            }
+
+            // Save updated room state (player stacks updated in game)
+            roomRepository.save(room);
+
+            // Broadcast new game state to all players
+            broadcastGameState(roomId, room);
+            
+        } catch (IllegalStateException e) {
+            sendError(session, e.getMessage());
+        }
+    }
+
     private void handleLeaveRoom(WebSocketSession session) throws IOException {
         String roomId = sessionToRoom.get(session.getId());
         String username = sessionToUsername.get(session.getId());
@@ -160,23 +285,19 @@ public class WebsocketController extends TextWebSocketHandler {
         }
     }
 
-    // New Reconnect Logic
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String roomId = sessionToRoom.get(session.getId());
         String username = sessionToUsername.get(session.getId());
 
-        // Remove from WebSocket maps immediately so we don't try to send them messages
         cleanupSessionMaps(session);
 
         if (roomId != null && username != null) {
-            // Do NOT remove from Room object yet. Schedule a check.
             String userKey = roomId + ":" + username;
             
             TimerTask task = new TimerTask() {
                 @Override
                 public void run() {
-                    // Logic to run if time expires
                     try {
                         System.out.println("Timeout reached for " + username + ". Removing from room.");
                         processPlayerRemoval(roomId, username);
@@ -193,7 +314,7 @@ public class WebsocketController extends TextWebSocketHandler {
         }
     }
 
-    // Helper methods ...
+    // Helper methods
     private void registerSession(WebSocketSession session, String roomId, String username) {
         roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
         sessionToRoom.put(session.getId(), roomId);
@@ -201,12 +322,23 @@ public class WebsocketController extends TextWebSocketHandler {
     }
 
     private void sendResponse(WebSocketSession session, String type, String roomId, Room room) throws IOException {
-        Map<String, Object> payload = Map.of("roomId", roomId, "playersNum", room.getPlayersNumber(), "players", room.getPlayers());
-        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(Map.of("type", type, "payload", payload))));
+        Map<String, Object> payload = Map.of(
+            "roomId", roomId, 
+            "playersNum", room.getPlayersNumber(), 
+            "players", room.getPlayers()
+        );
+        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(
+            Map.of("type", type, "payload", payload)
+        )));
     }
 
     private void broadcast(String roomId, String type, Room room, WebSocketSession exclude) throws IOException {
-        String json = objectMapper.writeValueAsString(Map.of("type", type, "payload", Map.of("playersNum", room.getPlayersNumber(), "players", room.getPlayers())));
+        String json = objectMapper.writeValueAsString(
+            Map.of("type", type, "payload", Map.of(
+                "playersNum", room.getPlayersNumber(), 
+                "players", room.getPlayers()
+            ))
+        );
         Set<WebSocketSession> sessions = roomSessions.get(roomId);
         if(sessions != null) {
             for(WebSocketSession s : sessions) {
@@ -218,10 +350,77 @@ public class WebsocketController extends TextWebSocketHandler {
         
         System.out.println("Broadcast "+type+" to room: "+roomId);
     }
+
+    private void broadcastGameState(String roomId, Room room) throws IOException {
+        // ดึง Game จาก memory
+        Game game = activeGames.get(roomId);
+        
+        if (game == null) {
+            System.out.println("Warning: No active game for room " + roomId);
+            return;
+        }
+        
+        // แปลง Card objects เป็น Map เพื่อให้ Jackson serialize ได้
+        List<Map<String, String>> boardCards = game.board.stream()
+            .map(card -> Map.of("rank", card.rank(), "suit", card.suit()))
+            .collect(java.util.stream.Collectors.toList());
+        
+        // แปลง Player hand cards เป็น Map
+        List<Map<String, Object>> playersData = room.getPlayers().stream()
+            .map(player -> {
+                List<Map<String, String>> handCards = player.getHand().stream()
+                    .map(card -> Map.of("rank", card.rank(), "suit", card.suit()))
+                    .collect(java.util.stream.Collectors.toList());
+                
+                return Map.of(
+                    "id", (Object) player.getId(),
+                    "username", player.getUsername(),
+                    "stack", player.getStack(),
+                    "isHost", player.isHost(),
+                    "hand", handCards
+                );
+            })
+            .collect(java.util.stream.Collectors.toList());
+        
+        Map<String, Object> gameState = Map.of(
+            "pot", game.pot,
+            "board", boardCards,
+            "street", game.street.toString(),
+            "currentBet", game.currentBet,
+            "bigBlind", game.bigBlind,
+            "currentActorId", game.activePlayerIds.isEmpty() ? "" : game.activePlayerIds.get(game.currentActorPos),
+            "players", playersData,
+            "activePlayerIds", game.activePlayerIds,
+            "playerBets", game.playerBets
+        );
+
+        String json = objectMapper.writeValueAsString(
+            Map.of("type", "GAME_STATE", "payload", gameState)
+        );
+
+        Set<WebSocketSession> sessions = roomSessions.get(roomId);
+        if(sessions != null) {
+            for(WebSocketSession s : sessions) {
+                if(s.isOpen()) {
+                    s.sendMessage(new TextMessage(json));
+                }
+            }
+        }
+    }
+
+    private void sendError(WebSocketSession session, String errorMessage) throws IOException {
+        Map<String, Object> response = Map.of(
+            "type", "ERROR",
+            "payload", Map.of("error", errorMessage)
+        );
+        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(response)));
+    }
     
     private String generateRandomRoomId(int length) {
         StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) sb.append(ALPHANUMERIC.charAt(RANDOM.nextInt(ALPHANUMERIC.length())));
+        for (int i = 0; i < length; i++) {
+            sb.append(ALPHANUMERIC.charAt(RANDOM.nextInt(ALPHANUMERIC.length())));
+        }
         return sb.toString();
     }
 
@@ -232,7 +431,6 @@ public class WebsocketController extends TextWebSocketHandler {
             room.removePlayer(username);
 
             System.out.println(username+" has left Room: "+roomId);
-
 
             if (room.getPlayers().isEmpty()) {
                 roomRepository.deleteById(roomId);

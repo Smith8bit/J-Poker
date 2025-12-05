@@ -4,4 +4,11 @@ record Card(String rank, String suit) {
     public String toString() {
         return rank + suit;
     }
+    public String getRank() {
+        return rank;
+    }
+    
+    public String getSuit() {
+        return suit;
+    }
 }
