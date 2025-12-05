@@ -30,7 +30,6 @@ public class WebsocketController extends TextWebSocketHandler {
     private final Map<String, String> sessionToUsername = new ConcurrentHashMap<>();
     private final Map<String, TimerTask> scheduledDisconnects = new ConcurrentHashMap<>();
     
-    // เก็บ Game objects ใน memory (ไม่ persist ใน database)
     private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
 
     @Autowired
@@ -240,7 +239,7 @@ public class WebsocketController extends TextWebSocketHandler {
 
                 room.getPlayers().clear();
                 room.getPlayers().addAll(game.players.values());
-                
+
                 Map<String, Object> payload = new HashMap<>(game.gameOverData);
                 // เพิ่มข้อมูล players ล่าสุดไปด้วย (เพื่ออัปเดตเงิน)
                 payload.put("players", room.getPlayers()); 
@@ -255,7 +254,7 @@ public class WebsocketController extends TextWebSocketHandler {
                     if(s.isOpen()) s.sendMessage(new TextMessage(json));
                 }
                 
-                // 🔥 เคลียร์ค่าทิ้ง เพื่อไม่ให้ส่งซ้ำ
+                // คลียร์ค่าทิ้ง เพื่อไม่ให้ส่งซ้ำ
                 game.gameOverData = null; 
                 
             } else {
@@ -360,7 +359,7 @@ public class WebsocketController extends TextWebSocketHandler {
             return;
         }
         
-        // แปลง Card objects เป็น Map เพื่อให้ Jackson serialize ได้
+        // แปลง Card objects เป็น Map
         List<Map<String, String>> boardCards = game.board.stream()
             .map(card -> Map.of("rank", card.rank(), "suit", card.suit()))
             .collect(java.util.stream.Collectors.toList());

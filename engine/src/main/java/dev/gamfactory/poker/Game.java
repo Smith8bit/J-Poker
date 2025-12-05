@@ -22,11 +22,9 @@ public class Game {
     public List<String> activePlayerIds;
     public int currentActorPos;
 
-    // 🔥 ตัวแปรสำคัญ: เก็บ ID คนที่ตัดสินใจแล้วในรอบนี้
     public Set<String> playersActed; 
     public Map<String, Object> gameOverData = null;
 
-    // Constructor เปล่า (จำเป็นสำหรับ DB)
     public Game() {
         this.players = new HashMap<>();
         this.playerOrder = new ArrayList<>();
@@ -43,7 +41,6 @@ public class Game {
         this.smallBlind = bigBlind / 2;
         
         for (Player p : initialPlayers) {
-            // ใช้ ID เป็น Key ตามโค้ดเดิมของคุณ
             this.players.put(p.getId(), p); 
             this.playerOrder.add(p.getId());
         }
@@ -83,7 +80,7 @@ public class Game {
             }
         }
 
-        // คนเริ่มเล่นคือคนถัดจาก BB (หรือคนแรกถ้าคนน้อย)
+        // คนเริ่มเล่นคือคนถัดจาก BB
         int startPos = (this.playerOrder.size() >= 3) ? 2 : 0;
         this.currentActorPos = startPos % this.activePlayerIds.size();
     }
@@ -112,7 +109,7 @@ public class Game {
         String playerId = getCurrentPlayerId();
         validateAction(playerId);
         
-        // 🔥 Logic ใหม่: เช็คว่าเงินถึงหรือยัง ถ้าถึงแล้วให้ Check ได้เลย
+        // เช็คว่าเงินถึงหรือยัง ถ้าถึงแล้วให้ Check ได้เลย
         int myBet = this.playerBets.getOrDefault(playerId, 0);
         if (myBet < this.currentBet) {
             System.out.println("Cannot Check! You must Call " + (this.currentBet - myBet));
@@ -133,7 +130,7 @@ public class Game {
         int currentContribution = this.playerBets.getOrDefault(playerId, 0);
         int callAmount = this.currentBet - currentContribution;
         
-        // ถ้า callAmount เป็น 0 ก็คือการ Check นั่นแหละ (ทำได้)
+        // ถ้า callAmount เป็น 0 ก็คือการ Check นั่นแหละ
         int posted = _postBet(playerId, callAmount);
         this.pot += posted;
 
@@ -142,14 +139,14 @@ public class Game {
     }
 
     public void bet(String playerId, int amount) {
-        // Bet ถือเป็นการตั้งยอดใหม่ (เหมือน Raise)
+        // Bet ถือเป็นการตั้งยอดใหม่
         raise(playerId, amount);
     }
 
     public void raise(String playerId, int amount) {
         validateAction(playerId);
         
-        // 🔥 Raise ต้องรีเซ็ตให้คนอื่นตัดสินใจใหม่
+        // Raise ต้องรีเซ็ตให้คนอื่นตัดสินใจใหม่
         this.playersActed.clear();
         this.playersActed.add(playerId);
 
@@ -175,7 +172,7 @@ public class Game {
     private boolean _isRoundOver() {
         if (activePlayerIds.size() <= 1) return true;
 
-        // 1. ทุกคนต้อง Action แล้ว
+        //ทุกคนต้อง Action แล้ว
         for (String id : activePlayerIds) {
             Player p = players.get(id);
             if (p.getStack() == 0) continue; // ข้ามคน All-in
@@ -183,7 +180,7 @@ public class Game {
             if (!playersActed.contains(id)) return false;
         }
 
-        // 2. เงินต้องเท่ากัน
+        //เงินต้องเท่ากัน
         for (String id : activePlayerIds) {
             Player p = players.get(id);
             if (p.getStack() == 0) continue; 
@@ -200,7 +197,7 @@ public class Game {
             _doShowdown();
             return;
         }
-        // เลื่อน Street
+        //เลื่อน Street
         if (this.street == Street.RIVER) {
             this.street = Street.SHOWDOWN;
         } else {
@@ -264,18 +261,15 @@ public class Game {
         System.out.println("Board: " + this.board);
         System.out.println();
 
-        // 1. คำนวณไพ่ของผู้เล่นทุกคนที่ยังเหลืออยู่ (Active Players)
+        // คำนวณไพ่ของผู้เล่นทุกคนที่ยังเหลืออยู่
         Map<String, HandEvaluator.HandResult> playerHands = new HashMap<>();
         List<Map<String, Object>> winnersInfo = new ArrayList<>();
-        
+
         for (String playerId : this.activePlayerIds) {
             Player player = this.players.get(playerId);
             
-            // ✅ ใช้ getHand() แทน .hand
             List<Card> hand = player.getHand(); 
             
-            // เรียก HandEvaluator (ถ้ามี Class นี้แล้ว)
-            // ถ้าไม่มี HandEvaluator ให้ข้ามส่วนนี้ไปแจกเงินมั่วๆ ไปก่อนได้
             try {
                 HandEvaluator.HandResult result = HandEvaluator.evaluateHand(
                         playerId,
@@ -292,29 +286,29 @@ public class Game {
             System.out.println();
         }
 
-        // 2. หาผู้ชนะ
+        //หาผู้ชนะ
         List<String> winners = HandEvaluator.findWinners(playerHands);
 
         System.out.println("───────────────────────");
         
         if (winners.isEmpty()) {
-             // กันเหนียว กรณีไม่มีใครชนะ (เป็นไปไม่ได้ใน Poker แต่กัน Crash)
+             // กันเหนียว กรณีไม่มีใครชนะ
              System.out.println("No winners calculated. Pot remains.");
              _handOver();
              return;
         }
 
-        // 3. แจกเงินรางวัล (Pot Distribution)
+        // 3. แจกเงินรางวัล
         if (winners.size() == 1) {
             // --- ชนะคนเดียว ---
             String winnerId = winners.get(0);
             HandEvaluator.HandResult winningHand = playerHands.get(winnerId);
             Player winner = this.players.get(winnerId);
             
-            System.out.println("🏆 Player " + winner.getUsername() + 
+            System.out.println(" Player " + winner.getUsername() + 
                                " WINS " + this.pot + " with " + winningHand.getRank() + "!");
             
-            // ✅ อัปเดตเงินผู้ชนะ (ใช้ setter)
+            //อัปเดตเงินผู้ชนะ (ใช้ setter)
             winner.setStack(winner.getStack() + this.pot);
             winnersInfo.add(Map.of(
                 "username", winner.getUsername(),
@@ -327,11 +321,11 @@ public class Game {
             int splitAmount = this.pot / winners.size();
             
             HandEvaluator.HandResult winningHand = playerHands.get(winners.get(0));
-            System.out.println("🤝 Split pot (" + splitAmount + " each) - " + winningHand.getRank());
+            System.out.println(" Split pot (" + splitAmount + " each) - " + winningHand.getRank());
             
             for (String winnerId : winners) {
                 Player winner = this.players.get(winnerId);
-                // ✅ อัปเดตเงิน
+                // อัปเดตเงิน
                 winner.setStack(winner.getStack() + splitAmount);
                 System.out.println("   -> " + winner.getUsername() + " gets " + splitAmount);
                 winnersInfo.add(Map.of(
@@ -353,7 +347,7 @@ public class Game {
             String winnerId = this.activePlayerIds.get(0);
             Player winner = this.players.get(winnerId);
             
-            System.out.println("🏆 Player " + winner.getUsername() + 
+            System.out.println(" Player " + winner.getUsername() + 
                                " WINS " + this.pot + " (everyone else folded)");
             
             winner.setStack(winner.getStack() + this.pot);
