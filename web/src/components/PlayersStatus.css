@@ -1,0 +1,130 @@
+.players-status-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.player-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.player-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    border: 4px solid #333;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    transition: all 0.3s;
+    image-rendering: pixelated;
+}
+
+.player-avatar.folded {
+    opacity: 0.4;
+    filter: grayscale(100%);
+}
+
+.player-avatar.current-turn {
+    border-color: #f2d649;
+    box-shadow: 0 0 20px rgba(242, 214, 73, 0.8);
+    animation: glow 1s infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 0 15px rgba(242, 214, 73, 0.6);
+    }
+    to {
+        box-shadow: 0 0 25px rgba(242, 214, 73, 1);
+    }
+}
+
+/* Pixel Face */
+.pixel-face {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.pixel-eyes {
+    display: flex;
+    gap: 16px;
+}
+
+.pixel-eye {
+    width: 8px;
+    height: 8px;
+    background: #333;
+    border-radius: 1px;
+}
+
+.pixel-mouth {
+    width: 16px;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+}
+
+/* Card Indicator */
+.card-indicator {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    background: rgba(0,0,0,0.8);
+    border: 2px solid white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 16px;
+}
+
+/* Player Name */
+.player-name {
+    color: white;
+    font-size: 14px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-name.my-name {
+    color: #f2d649;
+    font-weight: bold;
+}
+
+/* Blinds Indicator */
+.blinds-indicator {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #e74c3c;
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}

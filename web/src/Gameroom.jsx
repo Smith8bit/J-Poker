@@ -33,6 +33,8 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         if (lastJsonMessage !== null) {
             const { type, payload } = lastJsonMessage;
 
+            console.log("Received message:", type, payload); // Debug log
+
             // Handle Join/Updates
             if (type === 'JOIN_SUCCESS' || type === 'PLAYER_JOINED' || type === 'PLAYER_LEFT') {
                 setPlayersNum(payload.playersNum);
@@ -50,11 +52,21 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                 setPlayers(payload.players);
             }
 
-            if (type === 'GAME_STARTED'){
+            // Handle Game Started - สำหรับทุกคนในห้อง
+            if (type === 'GAME_STARTED') {
+                console.log("Game started! Switching to playing mode..."); // Debug log
                 setIsPlaying(true);
             }
+
+            // Handle Game State - เมื่อได้รับ state จาก game engine
+            if (type === 'GAME_STATE') {
+                // ถ้ายังไม่ได้เข้าโหมดเล่น ให้เข้าเลย
+                if (!isPlaying) {
+                    setIsPlaying(true);
+                }
+            }
         }
-    }, [lastJsonMessage, username]);
+    }, [lastJsonMessage, username, isPlaying]);
 
     // New Reconnect method -> let Backend manages = Backend trigger reconnect logic
     useEffect(() => {
@@ -74,21 +86,19 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             action: "start_game",
             data: {
                 roomId: roomId,
-                bigBlind: parseInt(bigBlindValue) || 100 // กันเหนียวถ้าไม่ได้ใส่ค่า
+                bigBlind: parseInt(bigBlindValue) || 100
             }
         }));
 
-        setIsPlaying(true);
+        // ไม่ต้อง setIsPlaying ที่นี่ เพราะจะรอ broadcast จาก server
     };
 
     const handleExitRoom = () => {
-        // ส่งคำสั่งบอก Server
         sendMessage(JSON.stringify({
             action: "leave_room",
             data: { username, roomId }
         }));
         
-        // กลับไปหน้า Lobby
         navigate('/Lobby', {
             state: { username, userCredit }
         });
@@ -110,7 +120,6 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                     userCredit={userCredit}
                     roomId={roomId}
                     navigate={navigate}
-                    // bigBlind={bigBlindValue}
                 />
             </div>
         )
@@ -119,7 +128,6 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     return (
         <div className="game-container font-pixel">
             
-            {/* file in components/GaneHeader */}
             {/* Header: แสดงเงินและจำนวนคน */}
             <GameHeader 
                 userCredit={userCredit} 
@@ -128,16 +136,14 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                 onExit={handleExitRoom}
             /> 
 
-            {/* file in components/PlayerArea */}
             {/* Player Area: แสดงตัวละครรอบโต๊ะ */}
             <PlayerArea players={players} />
 
-            {/* file in components/GameFooter */}
-            {/* Footer: แชท, กฎ, และปุ่ม Start (ส่ง prop isHost ไปเช็คได้ถ้าอยากให้ปุ่มขึ้นเฉพาะหัวห้อง) */}
+            {/* Footer: แชท, กฎ, และปุ่ม Start */}
             <GameFooter 
                 onStartGame={handleStartGame} 
                 IsHost={isHost}
-                />
+            />
 
         </div>
     );

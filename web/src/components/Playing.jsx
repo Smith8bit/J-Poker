@@ -1,109 +1,189 @@
 import { useState, useEffect } from "react";
-
 import Hand from "./Hand"
 import Table from "./Table"
 import PlayersStatus from "./PlayersStatus"
 import './Playing.css'
 
-function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, navigate, bigBlind }) {
+function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, navigate }) {
 
-    const [myHand, setMyHand] = useState([]);        // ไพ่ในมือเรา
-    const [communityCards, setCommunityCards] = useState([]); // ไพ่กองกลาง
-    const [pot, setPot] = useState(0);               // เงินกองกลาง
-    const [currentBet, setCurrentBet] = useState(0); // ยอดเดิมพันสูงสุดปัจจุบัน
-    const [currentTurn, setCurrentTurn] = useState(""); // ตาใครเล่น
-    const [myStatus, setMyStatus] = useState("WAITING"); // สถานะเรา (PLAYING, FOLDED)
-    const [raiseAmount, setRaiseAmount] = useState(bigBlind * 2); // ค่า Raise
+    const [gameState, setGameState] = useState(null);
+    const [myPlayer, setMyPlayer] = useState(null);
+    const [betAmount, setBetAmount] = useState(0);
 
     useEffect(() => {
-        if (lastJsonMessage) {
+        if (lastJsonMessage !== null) {
             const { type, payload } = lastJsonMessage;
 
-            if (type === 'GAME_STARTED' || type === 'NEXT_ROUND') {
-                // เริ่มเกม / รอบใหม่
-                setCommunityCards([]);
-                setMyHand([]);
-                setPot(0);
-                setCurrentBet(bigBlind);
-                setMyStatus("PLAYING");
-            }
-            
-            setCurrentBet(bigBlind); 
-            setRaiseAmount(bigBlind * 2);
-
-            if (payload.currentTurn) {
-                    console.log(payload.currentTurn)
-                    setCurrentTurn(payload.currentTurn);
+            if (type === 'GAME_STATE') {
+                setGameState(payload);
+                
+                // Find my player info
+                const me = payload.players.find(p => p.username === username);
+                setMyPlayer(me);
+                console.log("receive GAME_STATE "+{payload})
+                
+                // Set default bet amount to current bet or big blind
+                if (payload.currentBet > 0) {
+                    setBetAmount(payload.currentBet * 2);
                 }
-
-            if (type === 'YOUR_HAND') {
-                setMyHand(payload.hand);
-                setMyStatus("PLAYING");
             }
 
-            if (type === 'GAME_UPDATE') {
-                setCommunityCards(payload.communityCards || []);
-                setPot(payload.pot || 0);
-                setCurrentTurn(payload.currentTurn || "");
-                setCurrentBet(payload.currentBet || 0);
+            if (type === 'ERROR') {
+                alert(payload.error);
+            }
+
+            if (type === 'GAME_OVER') {
+                // 1. สร้างข้อความประกาศผล
+                let msg = "Game Over!\n";
+                payload.winners.forEach(w => {
+                    msg += `${w.username} wins $${w.amount} (${w.handRank})\n`;
+                });
+
+                // 2. โชว์ Alert
+                alert(msg);
+
+                // 3. เด้งกลับไปหน้า (Lobby)
+                // ส่ง state กลับไปด้วยเผื่อต้องใช้
+                navigate(`/Lobby`, { 
+                    state: { 
+                        username: username, 
+                        roomId: roomId,
+                        userCredit: userCredit // (จริงๆ ควร Update จาก payload.players ด้วย)
+                    } 
+                });
             }
         }
-    }, [lastJsonMessage, bigBlind]);
+    }, [lastJsonMessage, username]);
 
-    const sendGameAction = (actionType, amount = 0) => {
+    const handleAction = (actionType, amount = null) => {
+        const data = {
+            actionType: actionType,
+            roomId: roomId
+        };
+
+        if (amount !== null) {
+            data.amount = amount;
+        }
+
         sendMessage(JSON.stringify({
             action: "game_action",
-            data: {
-                roomId,
-                username,
-                action: actionType,
-                amount: amount
-            }
+            data: data
         }));
     };
 
-    const handleExitRoom = () => {
-        // ส่งคำสั่งบอก Server
-        sendMessage(JSON.stringify({
-            action: "leave_room",
-            data: { username, roomId }
-        }));
-        
-        // กลับไปหน้า Lobby
-        navigate('/Lobby', {
-            state: { username, userCredit }
-        });
+    const isMyTurn = () => {
+        if (!gameState || !myPlayer) return false;
+        return gameState.currentActorId === myPlayer.id;
     };
-    
+
+    const canCheck = () => {
+        if (!gameState || !myPlayer) return false;
+        const myBet = gameState.playerBets[myPlayer.id] || 0;
+        const result = myBet === gameState.currentBet;
+        console.log(`canCheck: myBet=${myBet}, currentBet=${gameState.currentBet}, result=${result}`);
+        return result;
+    };
+
+    const getCallAmount = () => {
+        if (!gameState || !myPlayer) return 0;
+        const myContribution = gameState.playerBets[myPlayer.id] || 0; 
+        const diff = gameState.currentBet - myContribution;
+        return diff > 0 ? diff : 0;
+    };
+
+    if (!gameState) {
+        return (
+            <div className="playing-container">
+                <p>Loading game...</p>
+            </div>
+        );
+    }
+
     return (
         <>
         <div className="handTable">
-            <Hand cards={myHand} />
+            {/* Your Hand */}
+            {myPlayer && myPlayer.hand && (
+                <Hand cards={myPlayer.hand} />
+            )}
+            
+            {/* Table with community cards and pot */}
             <Table 
-                cards={communityCards}
-                currentBet={setCurrentBet}
+                cards={gameState.board || []}
+                pot={gameState.pot}
+                currentBet={gameState.currentBet}
+                bigBlind={gameState.bigBlind}
+            />
+
+            {/* Players Status */}
+            <PlayersStatus 
+                players={gameState.players}
+                activePlayerIds={gameState.activePlayerIds}
+                currentActorId={gameState.currentActorId}
+                playerBets={gameState.playerBets}
+                myUsername={username}
             />
         </div>
+        
         <div className="footer">
-            <div className="chatLog"></div>
-            {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
-            <PlayersStatus />
-             {/* ปุ่ม Action แสดงเมื่อเป็นผู้เล่นในตานั้น */}
+            <div className="chatLog">
+            </div>
+
+            {/* Action buttons - only show when it's my turn */}
             <div className="actions-container">
                 <div className="betRaise">
-                    <button className="action-btn">BET</button>
-                    <button className="action-btn">RAISE</button>
-                    <input  type="number"
-                            className="bet-input"
-                            placeholder="NUMBER OF BET/RAISE"
-                            min={bigBlind}
-                            
+                    <button 
+                        className={`action-btn ${!isMyTurn() || gameState.currentBet > 0 ? 'disabled' : ''}`}
+                        onClick={() => isMyTurn() && gameState.currentBet === 0 && handleAction('bet', betAmount)}
+                        disabled={!isMyTurn() || gameState.currentBet > 0}
+                    >
+                        BET
+                    </button>
+                    <button 
+                        className={`action-btn ${!isMyTurn() || gameState.currentBet === 0 ? 'disabled' : ''}`}
+                        onClick={() => isMyTurn() && gameState.currentBet > 0 && handleAction('raise', betAmount - gameState.currentBet)}
+                        disabled={!isMyTurn() || gameState.currentBet === 0 || betAmount <= gameState.currentBet}
+                    >
+                        RAISE
+                    </button>
+                    <input  
+                        type="number"
+                        className="bet-input"
+                        placeholder="NUMBER OF BET/RAISE"
+                        value={betAmount}
+                        onChange={(e) => setBetAmount(parseInt(e.target.value) || 0)}
+                        min={gameState.currentBet || 0}
+                        max={myPlayer?.stack || 0}
                     />
                 </div>
                 <div className="checkCallFold">
-                    <button className="action-btn">CHECK</button>
-                    <button className="action-btn">CALL</button>
-                    <button className="action-btn">FOLD</button>
+                    {/* ปุ่ม CHECK: กดได้เมื่อ canCheck เป็น true */}
+                    <button 
+                        className={`action-btn ${!isMyTurn() || !canCheck() ? 'disabled' : ''}`}
+                        onClick={() => isMyTurn() && canCheck() && handleAction('check')}
+                        disabled={!isMyTurn() || !canCheck()}
+                    > 
+                        CHECK
+                    </button>
+
+                    {/* ปุ่ม CALL: กดได้เมื่อ canCheck เป็น false (ต้องจ่ายตังเพิ่ม) */}
+                    <button 
+                        className={`action-btn ${!isMyTurn() || canCheck() ? 'disabled' : ''}`}
+                        onClick={() => isMyTurn() && !canCheck() && handleAction('call')}
+                        disabled={!isMyTurn() || canCheck()}
+                    >
+                        {/* โชว์ยอดส่วนต่างที่ต้องจ่ายเพิ่ม (ไม่ใช่ยอดเต็ม) */}
+                        CALL ${getCallAmount()}
+                    </button>
+
+                    {/* ปุ่ม FOLD */}
+                    <button 
+                        className={`action-btn ${!isMyTurn() ? 'disabled' : ''}`}
+                        onClick={() => isMyTurn() && handleAction('fold')}
+                        disabled={!isMyTurn()}
+                    >
+                        FOLD
+                    </button>
                 </div>
             </div>
         </div>
