@@ -385,4 +385,12 @@ public class Game {
             player.setHasActed(false);
         }
     }
+
+    public List<String> getActivePlayerStrings() {
+        List<String> ActiveUserList =  new ArrayList<>();
+        for (String activeId : activePlayerIds) {
+            ActiveUserList.add(this.players.get(activeId).getUsername());
+        }
+        return ActiveUserList;
+    }
 }

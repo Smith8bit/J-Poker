@@ -7,6 +7,7 @@
     flex-direction: column;
     overflow: hidden;
     color: white;
+    gap: 8px;
 }
 
 /* --- TOP BAR --- */
@@ -16,6 +17,7 @@
     align-items: center;
     padding: 0 30px;
     background-color: transparent;
+    height: 10vh;
 }
 
 .top-left {
@@ -37,38 +39,34 @@
 
 .top-center {
   display: flex;
+  height: 100%;
 }
 
 .coin-icon {
   width: 2.5vw;
 }
 
-span{
-  margin: 1rem 0 1rem 0;
-}
 .coin-display {
-  position: fixed;
-  padding: 2px 5.5vw;
-  right: 60vw;
-  background: rgba(63, 124, 84, 1);
-  font-size: 3vw;
-  border-radius: 0 0 55px 55px; 
-  display: flex;
-  align-items: center;
-  gap: 10px;
+    display: flex;
+    align-items: center;
+    background: #3f7c54;
+    font-size: 3vw;
+
+    margin: 0px;
+    padding: 0px 50px;
+    border-radius: 0 0 30px 30px; 
+    gap: 10px;
 }
 
-h3 {
-  margin: 1rem 0 1rem 0;
-}
 .player-badge {
-  z-index: 1;
-  top: 0;
-  margin-left: 6vw;
-  background-color: #51A46C; 
-  padding: 2px 5.5vw;
-  border-radius: 0 0 55px 55px; 
-  font-size: 2.7vw;
+    display: flex;
+    align-items: center; 
+    background-color: #51A46C;
+    font-size: 2.7vw;
+    
+    margin: 0px;
+    padding: 0px 50px;
+    border-radius: 0 0 30px 30px; 
 }
 
 .top-right {

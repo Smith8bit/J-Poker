@@ -96,4 +96,12 @@ public class Room {
         this.game = new Game(this.players, bigBlind);
         this.game.start();
     }
+
+    public List<String> getUsername() {
+        List<String> userList =  new ArrayList<>();
+        for (Player player : this.players) {
+            userList.add(player.getUsername());
+        }
+        return userList;
+    }
 }

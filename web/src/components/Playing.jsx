@@ -109,13 +109,13 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
                 bigBlind={gameState.bigBlind}
             />
 
-            <PlayersStatus 
+            {/* <PlayersStatus 
                 players={gameState.players}
                 activePlayerIds={gameState.activePlayerIds}
                 currentActorId={gameState.currentActorId}
                 playerBets={gameState.playerBets}
                 myUsername={username}
-            />
+            /> */}
         </div>
         
         <div className="footer">
@@ -125,7 +125,7 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
             </div>
             
             {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
-            <PlayersStatus roomPlayers={['A', 'B', 'C', 'D', 'E', 'F']} activePlayers={['D', 'F']} />
+            <PlayersStatus roomPlayers={gameState.roomPlayers} activePlayers={gameState.activePlayerUsername} />
 
              {/* ปุ่ม Action แสดงเมื่อเป็นผู้เล่นในตานั้น */}
             <div className="actions-container">

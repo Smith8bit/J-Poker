@@ -10,7 +10,7 @@ import java.util.TimerTask;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+// import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -389,7 +389,8 @@ public class WebsocketController extends TextWebSocketHandler {
             "bigBlind", game.bigBlind,
             "currentActorId", game.activePlayerIds.isEmpty() ? "" : game.activePlayerIds.get(game.currentActorPos),
             "players", playersData,
-            "activePlayerIds", game.activePlayerIds,
+            "roomPlayers", room.getUsername(),
+            "activePlayerUsername", game.getActivePlayerStrings(),
             "playerBets", game.playerBets
         );
 

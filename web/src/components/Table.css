@@ -5,7 +5,7 @@
     align-items: center;
     position: relative;
     
-    padding: 2rem;
+    padding: 1.5rem;
     min-height: 40vh; 
     width: 70%;
     margin-left: auto;
@@ -25,7 +25,7 @@
 
 .card-wrapper {
     flex: 0 1 160px;
-    max-width: 160px;
+    max-width: 140px;
 }
 
 .card-img {

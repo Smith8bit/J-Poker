@@ -1,14 +1,14 @@
-import './PlayerStatus.css'
+import './PlayersStatus.css'
 
 function PlayersStatus({ roomPlayers = [], activePlayers = [] }) {
     
     const playerAvatars = [
         "pikachu",
-        "bulbasaur",
         "charmander",
         "squirtle",
         "magikarp",
         "eevee",
+        "bulbasaur",
     ];
 
     return (

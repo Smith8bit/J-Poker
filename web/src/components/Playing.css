@@ -11,6 +11,7 @@
 .footer {
     display: flex;
     flex-direction: row;
+    gap: 10%;
 }
 
 .actions-container {
