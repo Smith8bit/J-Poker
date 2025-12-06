@@ -22,7 +22,6 @@ function Login() {
       navigate('/Lobby', { 
         state: { 
           username: returnedUsername, 
-          userCredit 
         } 
       });
     } catch (err) {

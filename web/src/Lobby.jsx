@@ -1,59 +1,81 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import './Lobby.css'
+import axios from 'axios';
+import './Lobby.css';
 
 function Lobby({ sendMessage, lastJsonMessage }) {
     const location = useLocation();
     const navigate = useNavigate();
-    const { username, userCredit } = location.state || {};
+    
+    // Safety check: if location.state is null, default to empty object
+    const { username } = location.state || {};
+    
+    const [userCredit, setUserCredit] = useState(0); 
     const [roomId, setroomId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const prevMessageRef = useRef(lastJsonMessage); //เช็คข้อความเก่าหรอใหม่
+    const prevMessageRef = useRef(lastJsonMessage); 
 
     // 1. LISTEN: Watch for messages from the server
     useEffect(() => {
-            if (lastJsonMessage !== null && lastJsonMessage !== prevMessageRef.current) {
-                const { type, payload } = lastJsonMessage;
-                
-                if(loading){
-                    if ((type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS')) {
-                        navigate(`/room/${payload.roomId}`, {
-                            state: { username, userCredit }
-                        });
-                    } else if (type === 'JOIN_ERROR' || type === 'CREATE_ERROR') {
-                        setError(payload.error);
-                        setLoading(false);
-                    }
+        if (lastJsonMessage !== null && lastJsonMessage !== prevMessageRef.current) {
+            const { type, payload } = lastJsonMessage;
+            
+            if(loading){
+                if ((type === 'JOIN_SUCCESS' || type === 'CREATE_SUCCESS')) {
+                    navigate(`/room/${payload.roomId}`, {
+                        state: { username, userCredit } // Pass the updated credit
+                    });
+                } else if (type === 'JOIN_ERROR' || type === 'CREATE_ERROR') {
+                    setError(payload.error);
+                    setLoading(false);
                 }
-
-                // อัปเดต Ref ว่าข้อความนี้ดูไปแล้วนะ
-                prevMessageRef.current = lastJsonMessage;
             }
-        }, [lastJsonMessage, navigate, loading, username, userCredit]);
+            prevMessageRef.current = lastJsonMessage;
+        }
+    }, [lastJsonMessage, navigate, loading, username, userCredit]);
 
-    // 2. SEND: Trigger actions via WebSocket
-    const handleJoinRoom = () => {
+    // 2. FETCH DATA: Runs every time this page loads (mounts)
+    useEffect(() => {
+        const fetchUserInfo = async () => {
+            if (!username) return;
 
-        // จำค่าข้อความปัจจุบันไว้ว่าเป็น "ของเก่า" อย่าเอามาคิด
+            try {
+                // Use 'await' to wait for the server response
+                const response = await axios.post('http://localhost:8080/api/getUserInfo', {
+                    username
+                });
+                
+                // Update state with fresh data
+                if (response.data && response.data.userCredit !== undefined) {
+                    setUserCredit(response.data.userCredit);
+                }
+            } catch (err) {
+                console.error(err);
+                setError(err.response?.data?.message || 'Could not sync user data');
+            }
+        };
+
+        fetchUserInfo();
+    }, [username]); // Dependency on username ensures it runs on load
+
+    // 3. SEND: Trigger actions via WebSocket
+    const handleJoinRoom = (e) => {
+        e.preventDefault(); // <--- CRITICAL: Prevents page refresh on form submit
+
         prevMessageRef.current = lastJsonMessage;
-
         setError('');
         setLoading(true);
         
-        // Send JSON request
         sendMessage(JSON.stringify({
             action: 'join_room',
             data: { username, roomId }
         }));
-    }
+    };
 
     const handleCreateRoom = () => {
-
-        // จำค่าข้อความปัจจุบันไว้ว่าเป็น "ของเก่า" อย่าเอามาคิด
         prevMessageRef.current = lastJsonMessage;
-
         setError('');
         setLoading(true);
 
@@ -61,7 +83,7 @@ function Lobby({ sendMessage, lastJsonMessage }) {
             action: 'create_room',
             data: { username }
         }));        
-    }
+    };
 
     return (
         <div className="center-layout">
@@ -69,7 +91,8 @@ function Lobby({ sendMessage, lastJsonMessage }) {
             <h1>COM SCI<br/>POKER</h1>
             
             <div className="menu">
-                <form>
+                {/* Add onSubmit here to handle "Enter" key correctly */}
+                <form onSubmit={handleJoinRoom}>
                     <input 
                         type="text"
                         value={roomId}
@@ -79,7 +102,8 @@ function Lobby({ sendMessage, lastJsonMessage }) {
                         disabled={loading}
                     />
                     <br />
-                    <button type="submit" disabled={loading} onClick={handleJoinRoom}>
+                    {/* type="submit" works with the form onSubmit now */}
+                    <button type="submit" disabled={loading}>
                         {loading ? 'Joining...' : 'Join Room'}
                     </button>
                 </form>
@@ -96,15 +120,13 @@ function Lobby({ sendMessage, lastJsonMessage }) {
                 </button>
             </div>
 
-            
-            {/* Added functionality to go back to Login */}
             <button id="wrongName" onClick={() => navigate('/')}>
                 Wait, my name is wrong.
             </button>
             
             {error && <p style={{position:'fixed', color: 'red', marginTop: '10px', fontSize: '2em', left:'45%'}}>{error}</p>}
         </div>
-    )
+    );
 }
 
 export default Lobby;

@@ -9,7 +9,7 @@ public class Player {
     private String username;  
     private int stack;        
     private boolean isHost;   
-    
+
     private List<Card> hand;     
     private int currentRoundBet; 
     private boolean folded;      

@@ -5,10 +5,12 @@
     align-items: center;
     position: relative;
     
-    padding: 1.5rem;
-    min-height: 40vh; 
+    padding: 0.5rem 1.5rem;
+    height: fit-content; 
     width: 70%;
     margin-left: auto;
+    gap: 10px;
+
 
     border-top-left-radius: 120px;
     border-bottom-left-radius: 120px;
@@ -34,6 +36,14 @@
     display: block;
     border-radius: 6px; 
     box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.current-bet {
+    font-size: 2rem;
+}
+
+.bigBlind {
+    font-size: 2rem;
 }
 
 

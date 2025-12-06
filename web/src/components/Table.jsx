@@ -1,6 +1,6 @@
 import "./Table.css"
 
-function Table({ cards, pot, currentBet, bigBlind }) {
+function Table({ cards, currentBet, bigBlind }) {
     
     const safeCards = cards || [];
     const comCards = [...safeCards];
@@ -12,8 +12,7 @@ function Table({ cards, pot, currentBet, bigBlind }) {
 
     return (
         <div className="table">
-            <div className="info-text bet">CURRENT BET: {currentBet}</div>
-            <div className="">POT: {pot}</div>
+            <div className="current-bet">CURRENT BET: {currentBet}</div>
             <div className="communityCards">
                 {comCards.map((card, index) => {
                     const isBack = card === 'back';
@@ -33,7 +32,7 @@ function Table({ cards, pot, currentBet, bigBlind }) {
                 })}
             </div>
             
-            <div className="info-text bigBlind">BIG BLIND: {bigBlind}</div>
+            <div className="bigBlind">BIG BLIND: {bigBlind}</div>
         </div>
     )
 }

@@ -3,12 +3,15 @@ import Hand from "./Hand"
 import Table from "./Table"
 import PlayersStatus from "./PlayersStatus"
 import './Playing.css'
+import coin from "../assets/coin/coin.png";
 
-function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, navigate }) {
+
+function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, navigate, onExit }) {
 
     const [gameState, setGameState] = useState(null);
     const [myPlayer, setMyPlayer] = useState(null);
     const [betAmount, setBetAmount] = useState(0);
+    const [currentCredit, setCurrentCredit] = useState(0);
 
     useEffect(() => {
         if (lastJsonMessage !== null) {
@@ -20,6 +23,7 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
                 // Find my player info
                 const me = payload.players.find(p => p.username === username);
                 setMyPlayer(me);
+                setCurrentCredit(me.stack);
                 console.log("receive GAME_STATE "+{payload})
                 
                 // Set default bet amount to current bet or big blind
@@ -44,7 +48,7 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
                     state: { 
                         username: username, 
                         roomId: roomId,
-                        userCredit: userCredit
+                        userCredit: currentCredit
                     } 
                 });
             }
@@ -96,96 +100,110 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
     }
 
     return (
-        <>
-        <div className="handTable">
-            {myPlayer && myPlayer.hand && (
-                <Hand cards={myPlayer.hand} />
-            )}
-            
-            <Table 
-                cards={gameState.board || []}
-                pot={gameState.pot}
-                currentBet={gameState.currentBet}
-                bigBlind={gameState.bigBlind}
-            />
-
-            {/* <PlayersStatus 
-                players={gameState.players}
-                activePlayerIds={gameState.activePlayerIds}
-                currentActorId={gameState.currentActorId}
-                playerBets={gameState.playerBets}
-                myUsername={username}
-            /> */}
-        </div>
-        
-        <div className="footer">
-            <div className="chat-box">
-                <div style={{opacity: 0.5}}>SYSTEM LOG...</div>
-                <div>Welcome to Room!</div>
-            </div>
-            
-            {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
-            <PlayersStatus roomPlayers={gameState.roomPlayers} activePlayers={gameState.activePlayerUsername} />
-
-             {/* ปุ่ม Action แสดงเมื่อเป็นผู้เล่นในตานั้น */}
-            <div className="actions-container">
-                <div className="betRaise">
-                    <button 
-                        className={`action-btn ${!isMyTurn() || gameState.currentBet > 0 ? 'disabled' : ''}`}
-                        onClick={() => isMyTurn() && gameState.currentBet === 0 && handleAction('bet', betAmount)}
-                        disabled={!isMyTurn() || gameState.currentBet > 0}
-                    >
-                        BET
-                    </button>
-                    <button 
-                        className={`action-btn ${!isMyTurn() || gameState.currentBet === 0 ? 'disabled' : ''}`}
-                        onClick={() => isMyTurn() && gameState.currentBet > 0 && handleAction('raise', betAmount - gameState.currentBet)}
-                        disabled={!isMyTurn() || gameState.currentBet === 0 || betAmount <= gameState.currentBet}
-                    >
-                        RAISE
-                    </button>
-                    <input  
-                        type="number"
-                        className="bet-input"
-                        placeholder="NUMBER OF BET/RAISE"
-                        value={betAmount}
-                        onChange={(e) => setBetAmount(parseInt(e.target.value) || 0)}
-                        min={gameState.currentBet || 0}
-                        max={myPlayer?.stack || 0}
-                    />
-                </div>
-                <div className="checkCallFold">
-                    {/* ปุ่ม CHECK: กดได้เมื่อ canCheck เป็น true */}
-                    <button 
-                        className={`action-btn ${!isMyTurn() || !canCheck() ? 'disabled' : ''}`}
-                        onClick={() => isMyTurn() && canCheck() && handleAction('check')}
-                        disabled={!isMyTurn() || !canCheck()}
-                    > 
-                        CHECK
-                    </button>
-
-                    {/* ปุ่ม CALL: กดได้เมื่อ canCheck เป็น false (ต้องจ่ายตังเพิ่ม) */}
-                    <button 
-                        className={`action-btn ${!isMyTurn() || canCheck() ? 'disabled' : ''}`}
-                        onClick={() => isMyTurn() && !canCheck() && handleAction('call')}
-                        disabled={!isMyTurn() || canCheck()}
-                    >
-                        {/* โชว์ยอดส่วนต่างที่ต้องจ่ายเพิ่ม */}
-                        CALL ${getCallAmount()}
-                    </button>
-
-                    {/* ปุ่ม FOLD */}
-                    <button 
-                        className={`action-btn ${!isMyTurn() ? 'disabled' : ''}`}
-                        onClick={() => isMyTurn() && handleAction('fold')}
-                        disabled={!isMyTurn()}
-                    >
-                        FOLD
+        <div className="playing-container">
+            <div className="top-bar">
+                <div className="top-left">
+                    <button className="btn-exit" onClick={onExit}>
+                        🚪
                     </button>
                 </div>
+                    
+                <div className="top-center">
+                    <div className="coin-display">
+                        <img src={coin} className="coin-icon"></img>
+                        <span>{currentCredit ? currentCredit.toLocaleString() : '0'}</span>
+                    </div>
+                    <div className="player-badge">
+                        <h3>POT: {gameState.pot}</h3>
+                    </div>
+                </div>
+
+                <div className="top-right">
+                    ROOM CODE: {roomId}
+                </div>
+            </div>
+
+            <div className="handTable">
+                {myPlayer && myPlayer.hand && (
+                    <Hand cards={myPlayer.hand} />
+                )}
+                
+                <Table 
+                    cards={gameState.board || []}
+                    currentBet={gameState.currentBet}
+                    bigBlind={gameState.bigBlind}
+                />
+                
+            </div>
+            
+            <div className="footer">
+                <div className="chat-box">
+                    <div style={{opacity: 0.5}}>SYSTEM LOG...</div>
+                    <div>Welcome to Room!</div>
+                </div>
+                
+                {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
+                <PlayersStatus roomPlayers={gameState.roomPlayers} activePlayers={gameState.activePlayerUsername} />
+
+                {/* ปุ่ม Action แสดงเมื่อเป็นผู้เล่นในตานั้น */}
+                <div className="actions-container">
+                    <div className="betRaise">
+                        <button 
+                            className={`action-btn ${!isMyTurn() || gameState.currentBet > 0 ? 'disabled' : ''}`}
+                            onClick={() => isMyTurn() && gameState.currentBet === 0 && handleAction('bet', betAmount)}
+                            disabled={!isMyTurn() || gameState.currentBet > 0}
+                        >
+                            BET
+                        </button>
+                        <button 
+                            className={`action-btn ${!isMyTurn() || gameState.currentBet === 0 ? 'disabled' : ''}`}
+                            onClick={() => isMyTurn() && gameState.currentBet > 0 && handleAction('raise', betAmount)}
+                            disabled={!isMyTurn() || gameState.currentBet === 0 || betAmount <= gameState.currentBet}
+                        >
+                            RAISE
+                        </button>
+                        <input  
+                            type="number"
+                            className="bet-input"
+                            placeholder="NUMBER OF BET/RAISE"
+                            value={betAmount}
+                            onChange={(e) => setBetAmount(parseInt(e.target.value) || 0)}
+                            min={gameState.currentBet || 0}
+                            max={myPlayer?.stack || 0}
+                        />
+                    </div>
+                    <div className="checkCallFold">
+                        {/* ปุ่ม CHECK: กดได้เมื่อ canCheck เป็น true */}
+                        <button 
+                            className={`action-btn ${!isMyTurn() || !canCheck() ? 'disabled' : ''}`}
+                            onClick={() => isMyTurn() && canCheck() && handleAction('check')}
+                            disabled={!isMyTurn() || !canCheck()}
+                        > 
+                            CHECK
+                        </button>
+
+                        {/* ปุ่ม CALL: กดได้เมื่อ canCheck เป็น false (ต้องจ่ายตังเพิ่ม) */}
+                        <button 
+                            className={`action-btn ${!isMyTurn() || canCheck() ? 'disabled' : ''}`}
+                            onClick={() => isMyTurn() && !canCheck() && handleAction('call')}
+                            disabled={!isMyTurn() || canCheck()}
+                        >
+                            {/* โชว์ยอดส่วนต่างที่ต้องจ่ายเพิ่ม */}
+                            CALL ${getCallAmount()}
+                        </button>
+
+                        {/* ปุ่ม FOLD */}
+                        <button 
+                            className={`action-btn ${!isMyTurn() ? 'disabled' : ''}`}
+                            onClick={() => isMyTurn() && handleAction('fold')}
+                            disabled={!isMyTurn()}
+                        >
+                            FOLD
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-        </>
     );
 }
 

@@ -237,6 +237,7 @@ public class Game {
         if (amount > player.getStack()) amount = player.getStack(); // All-in logic
         
         player.setStack(player.getStack() - amount);
+        System.out.println(player.getUsername()+" stack: "+player.getStack());
         this.playerBets.put(playerId, this.playerBets.get(playerId) + amount);
         return amount;
     }

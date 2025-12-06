@@ -158,7 +158,6 @@ public class WebsocketController extends TextWebSocketHandler {
             
             // Send GAME_STARTED to all players first
             broadcast(roomId, "GAME_STARTED", room, null);
-            
             // Start the game engine
             room.startGame(userRepository);
             
@@ -388,7 +387,7 @@ public class WebsocketController extends TextWebSocketHandler {
             "currentBet", game.currentBet,
             "bigBlind", game.bigBlind,
             "currentActorId", game.activePlayerIds.isEmpty() ? "" : game.activePlayerIds.get(game.currentActorPos),
-            "players", playersData,
+            "players", game.players.values(),
             "roomPlayers", room.getUsername(),
             "activePlayerUsername", game.getActivePlayerStrings(),
             "playerBets", game.playerBets

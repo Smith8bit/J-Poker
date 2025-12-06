@@ -5,6 +5,8 @@ import PlayerArea from "./components/PlayerArea";
 import GameFooter from "./components/GameFooter";
 import Playing from "./components/Playing";
 import './Gameroom.css';
+import coin from "./assets/coin/coin.png";
+
 
 function Gameroom({ sendMessage, lastJsonMessage }) {
     const { roomId } = useParams();
@@ -106,13 +108,6 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
     if (isPlaying) {
         return (
-            <div className="game-container font-pixel">
-                <GameHeader 
-                    userCredit={userCredit} 
-                    playersCount={playersNum} 
-                    roomId={roomId} 
-                    onExit={handleExitRoom}
-                /> 
                 <Playing 
                     sendMessage={sendMessage} 
                     lastJsonMessage={lastJsonMessage}
@@ -120,8 +115,8 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                     userCredit={userCredit}
                     roomId={roomId}
                     navigate={navigate}
+                    onExit={handleExitRoom}
                 />
-            </div>
         )
     }
 
