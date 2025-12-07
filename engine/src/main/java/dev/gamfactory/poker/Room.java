@@ -86,7 +86,7 @@ public class Room {
         
         for (Player p : this.players) {
             String username = p.getUsername();
-            
+            p.resetHand();
             Optional<User> userOpt = userRepository.findByUsername(username);
             
             if (userOpt.isPresent()) {
@@ -109,5 +109,9 @@ public class Room {
 
     public boolean isPlaying() {
         return isPlaying;
+    }
+
+    public void setPlaying(boolean status) {
+        this.isPlaying =  status;
     }
 }

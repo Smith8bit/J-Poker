@@ -118,6 +118,11 @@ public class WebsocketController extends TextWebSocketHandler {
 
             if (existingPlayer != null) {
                 existingPlayer.setId(session.getId());
+
+                if (activeGames.containsKey(roomId)) {
+                Game game = activeGames.get(roomId);
+                game.updatePlayerSession(username, session.getId());
+            }
             } else {
                 if (room.getPlayers().size() >= 6) { 
                     Map<String, Object> errorResponse = Map.of(
@@ -228,16 +233,17 @@ public class WebsocketController extends TextWebSocketHandler {
                     sendError(session, "Unknown action: " + actionType);
                     return;
             }
+            roomRepository.save(room);
+
+            // 2. Check Game Over logic
             if (game.gameOverData != null) {
                 System.out.println("Saving updated credits to Database...");
                 for (Player p : game.players.values()) {    
                     Optional<User> userOpt = userRepository.findByUsername(p.getUsername());
                     if (userOpt.isPresent()) {
                         User user = userOpt.get();
-                        // อัปเดตเงินใน DB ให้ตรงกับเงินในเกม (Stack)
                         user.setUserCredit(p.getStack()); 
-                        userRepository.save(user); // บันทึก!
-                        System.out.println("   -> Updated " + user.getUsername() + ": " + user.getUserCredit());
+                        userRepository.save(user);
                     }
                 }
 
@@ -245,33 +251,27 @@ public class WebsocketController extends TextWebSocketHandler {
                 room.getPlayers().addAll(game.players.values());
 
                 Map<String, Object> payload = new HashMap<>(game.gameOverData);
-                // เพิ่มข้อมูล players ล่าสุดไปด้วย (เพื่ออัปเดตเงิน)
                 payload.put("players", room.getPlayers()); 
-                
+                room.setPlaying(false);
+                roomRepository.save(room); 
                 String json = objectMapper.writeValueAsString(Map.of(
                     "type", "GAME_OVER", 
                     "payload", payload
                 ));
                 
-                // Broadcast ให้ทุกคน
+                // Broadcast GAME_OVER only
                 for(WebSocketSession s : roomSessions.get(roomId)) {
                     if(s.isOpen()) s.sendMessage(new TextMessage(json));
                 }
                 
-                // คลียร์ค่าทิ้ง เพื่อไม่ให้ส่งซ้ำ
                 game.gameOverData = null; 
                 
+                
             } else {
-                // ถ้าเกมยังไม่จบ ก็ส่ง GAME_STATE ตามปกติ
+                // If game is NOT over, send GAME_STATE
                 broadcastGameState(roomId, room);
             }
 
-            // Save updated room state (player stacks updated in game)
-            roomRepository.save(room);
-
-            // Broadcast new game state to all players
-            broadcastGameState(roomId, room);
-            
         } catch (IllegalStateException e) {
             sendError(session, e.getMessage());
         }

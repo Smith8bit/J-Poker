@@ -434,4 +434,56 @@ public class Game {
             _progress();
         }
     }
+
+    // In Game.java
+
+public void updatePlayerSession(String username, String newSessionId) {
+    // 1. Find the old Session ID associated with this username
+    String oldId = null;
+    Player targetPlayer = null;
+
+    for (Map.Entry<String, Player> entry : players.entrySet()) {
+        if (entry.getValue().getUsername().equals(username)) {
+            oldId = entry.getKey();
+            targetPlayer = entry.getValue();
+            break;
+        }
+    }
+
+    // If player is not in this game, do nothing
+    if (oldId == null || targetPlayer == null) return;
+    
+    System.out.println("Swapping Session ID for " + username + ": " + oldId + " -> " + newSessionId);
+
+    // 2. Update the Player Object itself
+    targetPlayer.setId(newSessionId);
+
+    // 3. Update the main 'players' map (Remove old key, add new key)
+    players.remove(oldId);
+    players.put(newSessionId, targetPlayer);
+
+    // 4. Update 'activePlayerIds' list
+    int activeIdx = activePlayerIds.indexOf(oldId);
+    if (activeIdx != -1) {
+        activePlayerIds.set(activeIdx, newSessionId);
+    }
+
+    // 5. Update 'playerOrder' list
+    int orderIdx = playerOrder.indexOf(oldId);
+    if (orderIdx != -1) {
+        playerOrder.set(orderIdx, newSessionId);
+    }
+
+    // 6. Update 'playerBets' map
+    if (playerBets.containsKey(oldId)) {
+        int currentBet = playerBets.remove(oldId);
+        playerBets.put(newSessionId, currentBet);
+    }
+
+    // 7. Update 'playersActed' Set
+    if (playersActed.contains(oldId)) {
+        playersActed.remove(oldId);
+        playersActed.add(newSessionId);
+    }
+}
 }

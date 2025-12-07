@@ -48,12 +48,6 @@ function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId,
         }
     }, [lastJsonMessage, username]);
 
-    useEffect(() => {
-        sendMessage(JSON.stringify({
-            action: "reconnect_request"
-        }));
-    }, []);
-
     const handleAction = (actionType, amount = null) => {
         const data = {
             actionType: actionType,

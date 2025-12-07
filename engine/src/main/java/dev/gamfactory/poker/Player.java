@@ -67,4 +67,8 @@ public class Player {
     public String toString() {
         return String.format("Player[user=%s, stack=%d, hand=%s]", username, stack, hand);
     }
+
+    public void resetHand() {
+        this.hand.clear();
+    }
 }
