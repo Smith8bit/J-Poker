@@ -52,7 +52,6 @@ function Lobby({ sendMessage, lastJsonMessage }) {
                     setUserCredit(response.data.userCredit);
                 }
             } catch (err) {
-                console.error(err);
                 setError(err.response?.data?.message || 'Could not sync user data');
             }
         };

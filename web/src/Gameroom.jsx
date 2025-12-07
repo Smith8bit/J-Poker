@@ -36,8 +36,6 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
         if (lastJsonMessage !== null) {
             const { type, payload } = lastJsonMessage;
 
-            console.log("Received message:", type, payload); // Debug log
-
             // Handle Join/Updates
             if (type === 'JOIN_SUCCESS' || type === 'PLAYER_JOINED' || type === 'PLAYER_LEFT') {
                 if (type === 'PLAYER_JOINED') {
@@ -90,9 +88,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     }, [username, roomId, sendMessage]);
 
     // Start (get BigBlind from Footer)
-    const handleStartGame = (bigBlindValue) => {
-        console.log(`Start Game Big Blind = ${bigBlindValue}`);
-        
+    const handleStartGame = (bigBlindValue) => {        
         sendMessage(JSON.stringify({
             action: "start_game",
             data: {
