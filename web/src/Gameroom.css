@@ -128,7 +128,7 @@
     height: 250px;
     display: flex;
     justify-content: space-between;
-    padding: 20px 10px;
+    padding: 20px 10px 20px 0px;
     align-items: flex-start;
 }
 

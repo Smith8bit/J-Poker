@@ -16,6 +16,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
     // State
     const [ playersNum, setPlayersNum ] = useState(0);
     const [ players, setPlayers] = useState([]);
+    const [chatMessages, setChatMessages] = useState([]);
     const [ isHost, setIsHost ] = useState(false);
     const [ isPlaying, setIsPlaying] = useState(false);
 
@@ -39,6 +40,12 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
             // Handle Join/Updates
             if (type === 'JOIN_SUCCESS' || type === 'PLAYER_JOINED' || type === 'PLAYER_LEFT') {
+                if (type === 'PLAYER_JOINED') {
+                    setChatMessages(prev => [...prev, "Someone has join the room."]);
+                } else if (type === 'PLAYER_LEFT') {
+                    setChatMessages(prev => [...prev, "Someone has left the room."]);
+                }
+                
                 setPlayersNum(payload.playersNum);
                 setPlayers(payload.players);
 
@@ -49,6 +56,8 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             
             // Handle Create Success (if applicable here)
             if (type === 'CREATE_SUCCESS') {
+                setChatMessages(prev => [...prev, "Create Room Success."]);
+                setChatMessages(prev => [...prev, `Room Code: ${roomId}`]);
                 setIsHost(true);
                 setPlayersNum(payload.playersNum);
                 setPlayers(payload.players);
@@ -56,7 +65,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
             // Handle Game Started - สำหรับทุกคนในห้อง
             if (type === 'GAME_STARTED') {
-                console.log("Game started! Switching to playing mode..."); // Debug log
+                setChatMessages(prev => [...prev, "Game Started!"]);
                 setIsPlaying(true);
             }
 
@@ -67,10 +76,6 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                     setIsPlaying(true);
                 }
             }
-
-            // if (type === 'GAME_OVER') {
-            //     setIsPlaying(false);
-            // }
         }
     }, [lastJsonMessage, username, isPlaying]);
 
@@ -116,7 +121,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                     sendMessage={sendMessage} 
                     lastJsonMessage={lastJsonMessage}
                     username={username}
-                    userCredit={userCredit}
+                    chatMessages={chatMessages}
                     roomId={roomId}
                     navigate={navigate}
                     onExit={handleExitRoom}
@@ -142,6 +147,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             <GameFooter 
                 onStartGame={handleStartGame} 
                 IsHost={isHost}
+                chatMessages={chatMessages}
             />
 
         </div>

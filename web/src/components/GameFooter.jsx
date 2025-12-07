@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 
-function GameFooter({ onStartGame, IsHost }) {
+function GameFooter({ onStartGame, IsHost, chatMessages }) {
 
     const [bigBlind, setBigBlind] = useState(100); //Default BigBlind
 
@@ -14,8 +14,13 @@ function GameFooter({ onStartGame, IsHost }) {
         <div className="footer-area">
             {/* ฝั่งซ้าย: Chat Log */}
             <div className="chat-box">
-                <div style={{opacity: 0.5}}>SYSTEM LOG...</div>
-                <div>Welcome to Room!</div>
+                <div style={{opacity: 0.5}}>SYSTEM LOG</div>
+                {chatMessages.map((message,index) => {
+                    return (
+                        <div key={index}>{message}</div>
+                    )
+                })}
+
             </div>
 
             {/* ตรงกลาง: Game Rule */}

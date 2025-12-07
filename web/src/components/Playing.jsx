@@ -6,7 +6,7 @@ import './Playing.css'
 import coin from "../assets/coin/coin.png";
 
 
-function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, navigate, onExit }) {
+function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId, navigate, onExit }) {
 
     const [gameState, setGameState] = useState(null);
     const [myPlayer, setMyPlayer] = useState(null);
@@ -28,7 +28,7 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
                 
                 // Set default bet amount to current bet or big blind
                 if (payload.currentBet > 0) {
-                    setBetAmount(payload.currentBet * 2);
+                    setBetAmount(payload.currentBet + 1);
                 }
             }
 
@@ -137,9 +137,14 @@ function Playing({ sendMessage, lastJsonMessage, username, userCredit, roomId, n
             </div>
             
             <div className="footer">
-                <div className="chat-box">
-                    <div style={{opacity: 0.5}}>SYSTEM LOG...</div>
-                    <div>Welcome to Room!</div>
+               <div className="chat-box">
+                    <div style={{opacity: 0.5}}>SYSTEM LOG</div>
+                    {chatMessages.map((message,index) => {
+                        return (
+                            <div key={index}>{message}</div>
+                        )
+                    })}
+
                 </div>
                 
                 {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
