@@ -46,6 +46,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                     setChatMessages(prev => [...prev, "Someone has left the room."]);
                 }
                 
+                setIsPlaying(payload.gameStatus);
                 setPlayersNum(payload.playersNum);
                 setPlayers(payload.players);
 
@@ -71,14 +72,10 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
 
             // Handle Game State - เมื่อได้รับ state จาก game engine
             if (type === 'GAME_STATE') {
-                // ถ้ายังไม่ได้เข้าโหมดเล่น ให้เข้าเลย
-                if (!isPlaying) {
-                    setIsPlaying(gameState.gameStatus);
-                }
+                setIsPlaying(true);
             }
-
             if (type === 'GAME_OVER') {
-                setIsPlaying(false);
+                // setIsPlaying(false);
             }
         }
     }, [lastJsonMessage, username, isPlaying]);
@@ -126,8 +123,8 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                     lastJsonMessage={lastJsonMessage}
                     username={username}
                     chatMessages={chatMessages}
+                    setChatMessages={setChatMessages}
                     roomId={roomId}
-                    navigate={navigate}
                     onExit={handleExitRoom}
                 />
         )

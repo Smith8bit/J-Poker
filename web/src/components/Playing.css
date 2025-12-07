@@ -6,7 +6,7 @@
     flex-direction: column;
     overflow: hidden;
     color: white;
-    gap: 8px;
+    gap: ;
 }
 
 
@@ -23,7 +23,7 @@
 .footer {
     display: flex;
     flex-direction: row;
-    height: 35vh;
+    height: 37vh;
     gap: 10%;
     
     /* Pushes the footer to the very bottom of the screen */

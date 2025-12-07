@@ -140,6 +140,11 @@ public class WebsocketController extends TextWebSocketHandler {
             System.out.println(username+" has join Room: "+roomId);
 
             broadcast(roomId, "PLAYER_JOINED", room, session);
+
+            if (activeGames.containsKey(roomId)) {
+                broadcastGameState(roomId, room);
+            }
+            
         } else {
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(
                 Map.of("type", "JOIN_ERROR", "payload", Map.of("error", "Room does not exist."))

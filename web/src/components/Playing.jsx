@@ -6,7 +6,7 @@ import './Playing.css'
 import coin from "../assets/coin/coin.png";
 
 
-function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId, navigate, onExit }) {
+function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId, setChatMessages, onExit }) {
 
     const [gameState, setGameState] = useState(null);
     const [myPlayer, setMyPlayer] = useState(null);
@@ -40,19 +40,19 @@ function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId,
                 payload.winners.forEach(w => {
                     msg += `${w.username} wins $${w.amount} (${w.handRank})\n`;
                 });
-
-                alert(msg);
-
-                // navigate(`/Lobby`, { 
-                //     state: { 
-                //         username: username, 
-                //         roomId: roomId,
-                //         userCredit: currentCredit
-                //     } 
-                // });
+                
+                if (setChatMessages) {
+                    setChatMessages(prevMessages => [...prevMessages, msg]);
+                }
             }
         }
     }, [lastJsonMessage, username]);
+
+    useEffect(() => {
+        sendMessage(JSON.stringify({
+            action: "reconnect_request"
+        }));
+    }, []);
 
     const handleAction = (actionType, amount = null) => {
         const data = {
