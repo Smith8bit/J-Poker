@@ -339,7 +339,8 @@ public class WebsocketController extends TextWebSocketHandler {
         String json = objectMapper.writeValueAsString(
             Map.of("type", type, "payload", Map.of(
                 "playersNum", room.getPlayersNumber(), 
-                "players", room.getPlayers()
+                "players", room.getPlayers(),
+                "gameStatus", room.isPlaying()
             ))
         );
         Set<WebSocketSession> sessions = roomSessions.get(roomId);
@@ -392,7 +393,11 @@ public class WebsocketController extends TextWebSocketHandler {
             "currentBet", game.currentBet,
             "bigBlind", game.bigBlind,
             "currentActorId", game.activePlayerIds.isEmpty() ? "" : game.activePlayerIds.get(game.currentActorPos),
-            "players", game.players.values(),
+            
+            // --- FIX START: Use 'playersData' instead of 'game.players.values()' ---
+            "players", playersData, 
+            // --- FIX END ---
+            
             "playerStatus", Map.of("roomPlayers",room.getUsername(), "activePlayerUsername", game.getActivePlayerStrings()),
             "gameStatus", room.isPlaying(),
             "playerBets", game.playerBets

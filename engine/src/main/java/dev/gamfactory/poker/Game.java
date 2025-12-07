@@ -408,7 +408,10 @@ public class Game {
 
         int indexToRemove = this.activePlayerIds.indexOf(playerId);
         
-        // this.players.remove(playerId);
+        // --- FIX START: Uncomment this line ---
+        this.players.remove(playerId); 
+        // --- FIX END ---
+        
         this.activePlayerIds.remove(playerId);
         this.playerOrder.remove(playerId);
         this.playerBets.remove(playerId); // Clean up bets

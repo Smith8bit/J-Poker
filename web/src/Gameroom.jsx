@@ -73,6 +73,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             // Handle Game State - เมื่อได้รับ state จาก game engine
             if (type === 'GAME_STATE') {
                 setIsPlaying(payload.gameStatus);
+                
             }
             if (type === 'GAME_OVER') {
                 if (payload.players) {
