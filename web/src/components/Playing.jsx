@@ -24,7 +24,6 @@ function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId,
                 const me = payload.players.find(p => p.username === username);
                 setMyPlayer(me);
                 setCurrentCredit(me.stack);
-                console.log("receive GAME_STATE "+{payload})
                 
                 // Set default bet amount to current bet or big blind
                 if (payload.currentBet > 0) {
@@ -80,7 +79,6 @@ function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId,
         if (!gameState || !myPlayer) return false;
         const myBet = gameState.playerBets[myPlayer.id] || 0;
         const result = myBet === gameState.currentBet;
-        console.log(`canCheck: myBet=${myBet}, currentBet=${gameState.currentBet}, result=${result}`);
         return result;
     };
 
