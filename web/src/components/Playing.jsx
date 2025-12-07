@@ -140,8 +140,10 @@ function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId,
                 </div>
                 
                 {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
-                <PlayersStatus roomPlayers={gameState.playerStatus.roomPlayers} activePlayers={gameState.playerStatus.activePlayerUsername} />
-
+                <div className="playerStatus-container">
+                    <PlayersStatus roomPlayers={gameState.playerStatus.roomPlayers} 
+                    activePlayers={gameState.playerStatus.activePlayerUsername} />
+                </div>
                 {/* ปุ่ม Action แสดงเมื่อเป็นผู้เล่นในตานั้น */}
                 <div className="actions-container">
                     <div className="betRaise">

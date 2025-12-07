@@ -1,25 +1,30 @@
 import React from 'react';
 
-import pikachu from "../assets/player icons/active/pikachu.png";
-import bulbasaur from '../assets/player icons/active/bulbasaur.png';
-import charmander from '../assets/player icons/active/charmander.png';
-import squirtle from '../assets/player icons/active/squirtle.png';
-import magikarp from '../assets/player icons/active/magikarp.png';
-import eevee from '../assets/player icons/active/eevee.png';
-
-const NON_HOST_AVATARS = [
-    bulbasaur, 
-    charmander, 
-    squirtle, 
-    magikarp, 
-    eevee
+// Unified Avatar List (Matches PlayersStatus)
+const AVATAR_LIST = [
+    "squirtle",
+    "charmander",
+    "pikachu",
+    "eevee",
+    "magikarp",
+    "bulbasaur",
 ];
 
-function PlayerArea({ players }) {
-    // สร้าง Array 6 ช่องเสมอ (ถ้า players มีน้อยกว่า 6 ก็ให้เป็นช่องว่าง)
+function getAvatarName(username) {
+    if (!username) return AVATAR_LIST[0];
+    let hash = 0;
+    for (let i = 0; i < username.length; i++) {
+        hash = username.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % AVATAR_LIST.length;
+    return AVATAR_LIST[index];
+}
+
+function PlayerArea({ players, activePlayers }) {
+    // Ensure we always have 6 seats
     const totalSeats = 6;
     const seats = Array.from({ length: totalSeats }).map((_, i) => {
-        return players[i] || null; // ถ้ามีผู้เล่นใส่ข้อมูล ถ้าไม่มีใส่ null
+        return players[i] || null; 
     });
 
     return (
@@ -27,33 +32,48 @@ function PlayerArea({ players }) {
             <div className="player-row-bg">
                 {seats.map((player, index) => {
                     
-                    let avatarSrc = null;
+                    let isActive = true; // Default to true (Lobby mode)
+                    let avatarName = "pikachu"; 
 
                     if (player) {
-                        if (player.host) {
-                            avatarSrc = pikachu;
-                        } else {
-                            avatarSrc = NON_HOST_AVATARS[index % NON_HOST_AVATARS.length];
+                        // 1. Check if Active (Only if activePlayers list is provided)
+                        if (activePlayers && Array.isArray(activePlayers)) {
+                            isActive = activePlayers.includes(player.username);
                         }
+
+                        // 2. Get Stable Avatar based on Username
+                        avatarName = getAvatarName(player.username);
                     }
 
+                    // 3. Construct URL
+                    const statusFolder = isActive ? "active" : "folded";
+                    const imgPrefix = isActive ? "" : "F_";
+
+                    const avatarSrc = player ? new URL(
+                        `../assets/player icons/${statusFolder}/${imgPrefix}${avatarName}.png`,
+                        import.meta.url
+                    ).href : null;
+
                     return (
-                        <div key={index} className={`player-slot ${!player ? 'empty' : ''}`}>
+                        <div 
+                            key={index} 
+                            className={`player-slot ${!player ? 'empty' : ''} ${!isActive ? 'folded-state' : ''}`}
+                        >
                             {player ? (
                                 <>
                                     <div className="player-name">
+                                        {/* Show Crown if Host */}
+                                        {player.host && <span style={{ marginRight: '10px', fontSize: '1.5rem'}}>👑</span>}
                                         {player.username}
                                     </div>
                                     <div className="player-stack">
                                         💰 ${player.stack}
                                     </div>
                                     <div className="avatar-container">
-                                        {/* แสดงรูปที่คำนวณได้ */}
                                         <img 
                                             src={avatarSrc} 
-                                            alt="Avatar"
-                                            className={`avatar-sprite ${player.host ? 'pikachu' : ''}`} // ใส่ class เผื่อไว้แต่ง CSS
-                                            style={{ width: '64px', height: '64px', objectFit: 'contain' }}
+                                            alt={avatarName}
+                                            className={`avatar-sprite ${!isActive ? 'folded-img' : ''}`}
                                         />
                                     </div>
                                 </>

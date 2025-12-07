@@ -85,9 +85,9 @@
 
 .player-row-bg {
     background-color: rgba(81, 164, 108, 0.6); 
-    margin-top: 200px;
-    width: 60%;
-    height: 100px;
+    margin-top: auto;
+    width: 70%;
+    height: 40%;
     border-radius: 100px;
     display: flex;
     justify-content: space-around;
@@ -104,31 +104,26 @@
 }
 
 .player-name {
-    font-size: 2rem;
+    font-size: 2.5rem;
     text-shadow: 2px 2px 0px #000;
     margin-bottom: 5px;
 }
 
-/* Placeholder สำหรับ Avatar (ใส่รูปจริงใน background-image ได้เลย) */
-.avatar-sprite {
-    width: 64px;
-    height: 64px;
-    background-color: #ccc; 
-    image-rendering: pixelated; 
-    border: 2px solid black; 
+.player-stack {
+    font-size: 1.5rem;
 }
 
-#host {
-    width: 64px;
+.avatar-container > img {
+    width: 100px;
 }
-
 
 /* --- FOOTER AREA --- */
 .footer-area {
-    height: 250px;
+    height: 36vh;
     display: flex;
     justify-content: space-between;
     padding: 20px 10px 0px 0px;
+    margin-bottom: 20px;
     align-items: flex-start;
 }
 

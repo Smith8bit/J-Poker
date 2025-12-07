@@ -2,7 +2,9 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, auto); 
-    gap: 12px;
+    gap: 8px;
+    column-gap: 50px;
+
 }
 
 .player-avatar {
@@ -12,13 +14,13 @@
     justify-content: center; 
 }
 
-.player-name {
-    font-size: 32px;
-}
-
 .img-avatar {
-    width: 100px;
+    width: 90px;
     height: auto;
     object-fit: cover;
 }
 
+.player-name-status {
+    font-size: 2rem;
+    text-shadow: 3px 3px 0px #000;
+}
