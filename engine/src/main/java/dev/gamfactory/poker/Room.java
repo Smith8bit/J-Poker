@@ -22,7 +22,7 @@ public class Room {
     private Game game;
 
     private int bigBlind;
-
+    private boolean isPlaying;
     public Room() {}
 
     public Room(String roomId) {
@@ -30,6 +30,7 @@ public class Room {
         this.maxPlayers = 6;
         this.players = new ArrayList<>();
         this.bigBlind = 100;
+        this.isPlaying = false;
     }
 
     public void addPlayer(Player player) {
@@ -94,6 +95,7 @@ public class Room {
         }
         
         this.game = new Game(this.players, bigBlind);
+        this.isPlaying = true;
         this.game.start();
     }
 
@@ -103,5 +105,9 @@ public class Room {
             userList.add(player.getUsername());
         }
         return userList;
+    }
+
+    public boolean isPlaying() {
+        return isPlaying;
     }
 }

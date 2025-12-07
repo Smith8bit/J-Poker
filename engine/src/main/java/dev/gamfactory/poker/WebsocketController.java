@@ -388,8 +388,8 @@ public class WebsocketController extends TextWebSocketHandler {
             "bigBlind", game.bigBlind,
             "currentActorId", game.activePlayerIds.isEmpty() ? "" : game.activePlayerIds.get(game.currentActorPos),
             "players", game.players.values(),
-            "roomPlayers", game.getPlayerStrings(),
-            "activePlayerUsername", game.getActivePlayerStrings(),
+            "playerStatus", Map.of("roomPlayers", game.getPlayerStrings(), "activePlayerUsername", game.getActivePlayerStrings()),
+            "gameStatus", room.isPlaying(),
             "playerBets", game.playerBets
         );
 

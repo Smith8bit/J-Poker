@@ -43,13 +43,13 @@ function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId,
 
                 alert(msg);
 
-                navigate(`/Lobby`, { 
-                    state: { 
-                        username: username, 
-                        roomId: roomId,
-                        userCredit: currentCredit
-                    } 
-                });
+                // navigate(`/Lobby`, { 
+                //     state: { 
+                //         username: username, 
+                //         roomId: roomId,
+                //         userCredit: currentCredit
+                //     } 
+                // });
             }
         }
     }, [lastJsonMessage, username]);
@@ -139,14 +139,14 @@ function Playing({ sendMessage, lastJsonMessage, username, chatMessages, roomId,
                     <div style={{opacity: 0.5}}>SYSTEM LOG</div>
                     {chatMessages.map((message,index) => {
                         return (
-                            <div key={index}>{message}</div>
+                            <div className="message" key={index}>{message}</div>
                         )
                     })}
 
                 </div>
                 
                 {/* แสดงสถานะผู้เล่น ใครอยู่ ใครหมอบ */}
-                <PlayersStatus roomPlayers={gameState.roomPlayers} activePlayers={gameState.activePlayerUsername} />
+                <PlayersStatus roomPlayers={gameState.playerStatus.roomPlayers} activePlayers={gameState.playerStatus.activePlayerUsername} />
 
                 {/* ปุ่ม Action แสดงเมื่อเป็นผู้เล่นในตานั้น */}
                 <div className="actions-container">

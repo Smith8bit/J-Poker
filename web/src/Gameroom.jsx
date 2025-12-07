@@ -73,8 +73,12 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
             if (type === 'GAME_STATE') {
                 // ถ้ายังไม่ได้เข้าโหมดเล่น ให้เข้าเลย
                 if (!isPlaying) {
-                    setIsPlaying(true);
+                    setIsPlaying(gameState.gameStatus);
                 }
+            }
+
+            if (type === 'GAME_OVER') {
+                setIsPlaying(false);
             }
         }
     }, [lastJsonMessage, username, isPlaying]);
