@@ -78,7 +78,7 @@ public class Room {
     }
 
     public Game getGame() {
-        return game;
+        return this.game;
     }
 
     public void startGame(UserRepository userRepository) {

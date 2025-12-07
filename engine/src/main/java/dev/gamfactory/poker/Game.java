@@ -172,7 +172,7 @@ public class Game {
     private boolean _isRoundOver() {
         if (activePlayerIds.size() <= 1) return true;
 
-        //ทุกคนต้อง Action แล้ว
+        // ทุกคนต้อง Action แล้ว
         for (String id : activePlayerIds) {
             Player p = players.get(id);
             if (p.getStack() == 0) continue; // ข้ามคน All-in
@@ -393,5 +393,45 @@ public class Game {
             ActiveUserList.add(this.players.get(activeId).getUsername());
         }
         return ActiveUserList;
+    }
+
+    public List<String> getPlayerStrings() {
+        List<String> userList =  new ArrayList<>();
+        for (Player player : players.values()) {
+            userList.add(player.getUsername());
+        }
+        return userList;
+    }
+
+    public void disconnectPlayer(String playerId) {
+        if (!this.activePlayerIds.contains(playerId)) return;
+
+        int indexToRemove = this.activePlayerIds.indexOf(playerId);
+        
+        // this.players.remove(playerId);
+        this.activePlayerIds.remove(playerId);
+        this.playerOrder.remove(playerId);
+        this.playerBets.remove(playerId); // Clean up bets
+
+        if (this.activePlayerIds.size() < 2) {
+            if (!this.activePlayerIds.isEmpty()) {
+                _handOver();
+            }
+            return;
+        }
+
+        if (indexToRemove < this.currentActorPos) {
+            this.currentActorPos--;
+        } 
+        else if (indexToRemove == this.currentActorPos) {
+            
+            if (this.currentActorPos >= this.activePlayerIds.size()) {
+                this.currentActorPos = 0;
+            }
+        }
+     
+        if (_isRoundOver()) {
+            _progress();
+        }
     }
 }

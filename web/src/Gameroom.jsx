@@ -67,6 +67,10 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                     setIsPlaying(true);
                 }
             }
+
+            // if (type === 'GAME_OVER') {
+            //     setIsPlaying(false);
+            // }
         }
     }, [lastJsonMessage, username, isPlaying]);
 

@@ -388,7 +388,7 @@ public class WebsocketController extends TextWebSocketHandler {
             "bigBlind", game.bigBlind,
             "currentActorId", game.activePlayerIds.isEmpty() ? "" : game.activePlayerIds.get(game.currentActorPos),
             "players", game.players.values(),
-            "roomPlayers", room.getUsername(),
+            "roomPlayers", game.getPlayerStrings(),
             "activePlayerUsername", game.getActivePlayerStrings(),
             "playerBets", game.playerBets
         );
@@ -427,16 +427,54 @@ public class WebsocketController extends TextWebSocketHandler {
         Optional<Room> roomOpt = roomRepository.findById(roomId);
         if (roomOpt.isPresent()) {
             Room room = roomOpt.get();
-            room.removePlayer(username);
+            Game game = activeGames.get(roomId);
 
-            System.out.println(username+" has left Room: "+roomId);
+            String playerId = null;
+            
+            if (game != null) {
+                for (Player p : game.players.values()) {
+                    if (p.getUsername().equals(username)) {
+                        playerId = p.getId();
+                        break;
+                    }
+                }
+            }
+            
+            if (playerId == null) {
+                for (Player p : room.getPlayers()) {
+                    if (p.getUsername().equals(username)) {
+                        playerId = p.getId();
+                        break;
+                    }
+                }
+            }
+
+            if (playerId == null) {
+                System.out.println("Could not find playerId for username: " + username);
+                return;
+            }
+
+            if (game != null) {
+                game.disconnectPlayer(playerId);
+                room.getPlayers().removeIf(p -> p.getUsername().equals(username));
+                
+                broadcastGameState(roomId, room);
+            } else {
+                room.getPlayers().removeIf(p -> p.getUsername().equals(username));
+            }
+
+            System.out.println(username + " (" + playerId + ") has left Room: " + roomId);
 
             if (room.getPlayers().isEmpty()) {
                 roomRepository.deleteById(roomId);
                 roomSessions.remove(roomId);
+                activeGames.remove(roomId);
                 System.out.println("Room " + roomId + " deleted (Empty).");
             } else {
-                room.getPlayers().get(0).setHost(true);
+                if (!room.getPlayers().isEmpty() && room.getPlayers().stream().noneMatch(Player::isHost)) {
+                    room.getPlayers().get(0).setHost(true);
+                }
+                
                 roomRepository.save(room);
                 broadcast(roomId, "PLAYER_LEFT", room, null);
             }
