@@ -27,9 +27,10 @@ function GameFooter({ onStartGame, IsHost, chatMessages }) {
             <div className="rules-box">
                 <h3>GAME RULE</h3>
                 <ol>
-                    <li>BIG BLINDS is Red.</li>
-                    <li>SMALL BLINDS is Yellow.</li>
-                    <li>Winner take all.</li>
+                    <li>Using Texas hold 'em Rule.</li>
+                    <li>First Player is Small Blind.</li>
+                    <li>Second Player is Big Blind.</li>
+                    <li>Players Order is Left to Right <br/> and Up to Down</li>
                 </ol>
             </div>
 

@@ -83,7 +83,7 @@ function Gameroom({ sendMessage, lastJsonMessage }) {
                 setChatMessages(prev => [...prev, "--- Game Ended: Back to Lobby ---"]); 
             }
         }
-    }, [lastJsonMessage, username, isPlaying]);
+    }, [lastJsonMessage]);
 
     // New Reconnect method -> let Backend manages = Backend trigger reconnect logic
     useEffect(() => {
