@@ -12,9 +12,9 @@
 
 ## 📸 Screenshots
 
-| Login & Lobby | In-Game Action | Winner Announcement |
-|:---:|:---:|:---:|
-| <img src="docs/lobby.png" width="250" /> | <img src="docs/gameplay.png" width="250" /> | <img src="docs/winner.png" width="250" /> |
+| Login & Lobby |
+|:---:|
+| <img src="docs/lobby.png" width="350" /> |
 
 
 ---
