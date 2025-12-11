@@ -54,9 +54,9 @@
 
 ```mermaid
 graph LR
-    Client[User / React App] -- HTTPS/WSS --> CloudRun[Cloud Run (Spring Boot)]
-    CloudRun -- Read/Write --> MongoDB[(MongoDB Atlas)]
-    Client -- HTTPS --> Firebase[Firebase Hosting]
+    Client["User / React App"] -- HTTPS/WSS --> CloudRun["Cloud Run (Spring Boot)"]
+    CloudRun -- Read/Write --> MongoDB[("MongoDB Atlas")]
+    Client -- HTTPS --> Firebase["Firebase Hosting"]
 ```
 
 ## 💻 Local Installation Guide
